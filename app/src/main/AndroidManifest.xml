@@ -49,6 +49,11 @@
             android:exported="false"
             android:theme="@style/Theme.BookBuddy" />
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
+
     </application>
 
 </manifest>
