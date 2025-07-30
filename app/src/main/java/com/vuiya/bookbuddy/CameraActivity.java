@@ -1,6 +1,7 @@
 package com.vuiya.bookbuddy;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -87,8 +88,9 @@ public class CameraActivity extends AppCompatActivity {
         fabCapture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: Capture image
-                Toast.makeText(CameraActivity.this, "Capture functionality will be implemented", Toast.LENGTH_SHORT).show();
+                // Navigate to OCR Result Activity
+                Intent intent = new Intent(CameraActivity.this, OcrResultActivity.class);
+                startActivity(intent);
             }
         });
 
