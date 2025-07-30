@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Universal Reader</string>
+    <string name="scan_book">Scan Book</string>
+    <string name="open_pdf">Open PDF</string>
+    <string name="use_camera_to_scan_physical_books">Use camera to scan physical books</string>
+    <string name="read_digital_or_scanned_pdf_documents">Read digital or scanned PDF documents</string>
+    <string name="read_translate_in_any_language">Read &amp; Translate in Any Language</string>
+    <string name="recent_books">Recent Books</string>
+    <string name="no_recent_activity">No recent activity</string>
+    <string name="view_all">View All</string>
+</resources>
