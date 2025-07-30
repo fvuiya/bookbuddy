@@ -44,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Navigate to PDF Selector Activity
-                Toast.makeText(MainActivity.this, "PDF feature coming soon!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, PdfSelectorActivity.class);
+                startActivity(intent);
             }
         });
 

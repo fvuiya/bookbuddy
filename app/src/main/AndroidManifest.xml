@@ -39,6 +39,11 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.BookBuddy" />
 
+        <activity
+            android:name=".PdfSelectorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
+
     </application>
 
 </manifest>
