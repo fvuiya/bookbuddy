@@ -9,8 +9,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
-import com.vuiya.bookbuddy.R;
-
 public class MainActivity extends AppCompatActivity {
 
     private CardView btnCamera, btnPdf;
@@ -37,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Navigate to Camera Activity
-                Toast.makeText(MainActivity.this, "Camera feature coming soon!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
+                startActivity(intent);
             }
         });
 
