@@ -52,7 +52,9 @@ public class MainActivity extends AppCompatActivity {
         btnLibrary.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Library feature coming soon!", Toast.LENGTH_SHORT).show();
+                // Navigate to Library Activity
+                Intent intent = new Intent(MainActivity.this, LibraryActivity.class);
+                startActivity(intent);
             }
         });
 
