@@ -1,5 +1,6 @@
 package com.vuiya.bookbuddy;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -52,8 +53,10 @@ public class LibraryActivity extends AppCompatActivity {
         libraryAdapter = new LibraryAdapter(libraryItems, new LibraryAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(LibraryItem item) {
-                // TODO: Handle item click - open book/pdf
-                Toast.makeText(LibraryActivity.this, "Opening: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+                // Navigate to Reader Activity
+                Intent intent = new Intent(LibraryActivity.this, ReaderActivity.class);
+                intent.putExtra("book_title", item.getTitle());
+                startActivity(intent);
             }
 
             @Override
