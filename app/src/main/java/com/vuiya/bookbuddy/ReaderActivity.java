@@ -1,22 +1,29 @@
 package com.vuiya.bookbuddy;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ReaderActivity extends AppCompatActivity {
 
+    private static final String TAG = "ReaderActivity";
     private ImageButton btnBack;
-    private TextView tvTitle, tvContent;
+    private TextView tvTitle, tvContent, tvPageIndicator;
+    private ScrollView scrollContent;
+    private View btnPrevious, btnNext, btnCopy, btnShare, btnTranslate;
+
     private String bookTitle = "Sample Book";
-    private String bookContent = "This is a sample book content. In the full implementation, this would show the OCR'd text from your scanned book or PDF.\n\n" +
-            "The text would be processed and translated according to your selected language preferences.\n\n" +
-            "You would be able to switch between original and translated text, copy content, and use text-to-speech features.\n\n" +
-            "For now, this is just a placeholder to demonstrate the app flow.";
+    private List<String> pagesContent = new ArrayList<>(); // Store content for each page
+    private int currentPageIndex = 0; // 0-based index
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,71 +32,174 @@ public class ReaderActivity extends AppCompatActivity {
 
         initViews();
         setupClickListeners();
-        displayContent();
+
+        // Get content from Intent (either from Camera OCR or PDF processing)
+        String fullContent = getIntent().getStringExtra("book_content");
+        Log.d(TAG, "Received content from intent, length: " + (fullContent != null ? fullContent.length() : 0));
+
+        bookTitle = getIntent().getStringExtra("book_title");
+        Log.d(TAG, "Received title from intent: " + bookTitle);
+
+        if (bookTitle == null || bookTitle.isEmpty()) {
+            bookTitle = "Untitled Document";
+        }
+
+        // If we have content, split it into pages
+        // For now, we'll split by a simple heuristic (e.g., every 500 words or "--- Page X ---" markers)
+        // In a real implementation, you might have more sophisticated page splitting logic
+        if (fullContent != null && !fullContent.isEmpty()) {
+            Log.d(TAG, "Splitting received content into pages");
+            splitContentIntoPages(fullContent);
+        } else {
+            Log.d(TAG, "No content received, using default page");
+            // Add a default page if no content
+            pagesContent.add("No content available. This is a placeholder page.");
+        }
+
+        displayCurrentPage();
+        updatePageIndicator();
+        updateNavigationButtons();
     }
 
     private void initViews() {
         btnBack = findViewById(R.id.btn_back);
         tvTitle = findViewById(R.id.tv_title);
         tvContent = findViewById(R.id.tv_content);
+        tvPageIndicator = findViewById(R.id.tv_page_indicator);
+        scrollContent = findViewById(R.id.scroll_content);
+
+        btnPrevious = findViewById(R.id.btn_previous);
+        btnNext = findViewById(R.id.btn_next);
+        btnCopy = findViewById(R.id.btn_copy);
+        btnShare = findViewById(R.id.btn_share);
+        btnTranslate = findViewById(R.id.btn_translate);
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
+        btnBack.setOnClickListener(v -> finish());
+
+        btnPrevious.setOnClickListener(v -> {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                displayCurrentPage();
+                updatePageIndicator();
+                updateNavigationButtons();
+                scrollToTop();
             }
         });
 
-        // Copy text button
-        findViewById(R.id.btn_copy).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                copyText();
+        btnNext.setOnClickListener(v -> {
+            if (currentPageIndex < pagesContent.size() - 1) {
+                currentPageIndex++;
+                displayCurrentPage();
+                updatePageIndicator();
+                updateNavigationButtons();
+                scrollToTop();
             }
         });
 
-        // Share text button
-        findViewById(R.id.btn_share).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                shareText();
+        btnCopy.setOnClickListener(v -> copyCurrentPageText());
+        btnShare.setOnClickListener(v -> shareCurrentPageText());
+        btnTranslate.setOnClickListener(v -> translateCurrentPageText());
+    }
+
+    private void splitContentIntoPages(String fullContent) {
+        pagesContent.clear();
+
+        // Simple splitting logic - you can make this more sophisticated
+        // For this example, we'll split by "--- Page X ---" markers if they exist
+        // Otherwise, we'll split into chunks of roughly 1000 characters
+        if (fullContent.contains("--- Page ")) {
+            // Split by page markers
+            Log.d(TAG, "Splitting content by page markers");
+            String[] pageSections = fullContent.split("--- Page \\d+ ---");
+            for (String section : pageSections) {
+                String trimmedSection = section.trim();
+                if (!trimmedSection.isEmpty()) {
+                    pagesContent.add(trimmedSection);
+                }
             }
-        });
-
-        // Translate button
-        findViewById(R.id.btn_translate).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                translateText();
+        } else {
+            // Simple character-based splitting
+            Log.d(TAG, "Splitting content by character chunks");
+            int chunkSize = 1500; // Roughly 250-300 words
+            int length = fullContent.length();
+            for (int i = 0; i < length; i += chunkSize) {
+                int end = Math.min(length, i + chunkSize);
+                pagesContent.add(fullContent.substring(i, end));
             }
-        });
+        }
+
+        // Ensure we have at least one page
+        if (pagesContent.isEmpty()) {
+            Log.d(TAG, "No pages created, adding default page");
+            pagesContent.add("Content could not be processed into pages.");
+        }
+
+        Log.d(TAG, "Total pages created: " + pagesContent.size());
     }
 
-    private void displayContent() {
-        tvTitle.setText(bookTitle);
-        tvContent.setText(bookContent);
+    private void displayCurrentPage() {
+        if (currentPageIndex >= 0 && currentPageIndex < pagesContent.size()) {
+            String pageContent = pagesContent.get(currentPageIndex);
+            Log.d(TAG, "Displaying page " + (currentPageIndex + 1) + ", content length: " +
+                    (pageContent != null ? pageContent.length() : 0));
+            tvContent.setText(pageContent);
+            tvTitle.setText(bookTitle);
+        }
     }
 
-    private void copyText() {
-        android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
-                getSystemService(android.content.Context.CLIPBOARD_SERVICE);
-        android.content.ClipData clip = android.content.ClipData.newPlainText("Book Content", bookContent);
-        clipboard.setPrimaryClip(clip);
-        Toast.makeText(this, "Text copied to clipboard", Toast.LENGTH_SHORT).show();
+    private void updatePageIndicator() {
+        int currentPageDisplay = currentPageIndex + 1; // 1-based for display
+        int totalPages = pagesContent.size();
+        String indicatorText = String.format("Page %d of %d", currentPageDisplay, totalPages);
+        Log.d(TAG, "Updating page indicator: " + indicatorText);
+        tvPageIndicator.setText(indicatorText);
     }
 
-    private void shareText() {
-        android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, bookContent);
-        shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, bookTitle);
-        startActivity(android.content.Intent.createChooser(shareIntent, "Share via"));
+    private void updateNavigationButtons() {
+        boolean hasPrevious = currentPageIndex > 0;
+        boolean hasNext = currentPageIndex < pagesContent.size() - 1;
+
+        btnPrevious.setEnabled(hasPrevious);
+        btnNext.setEnabled(hasNext);
+
+        // Optional: Change button appearance based on state
+        btnPrevious.setAlpha(hasPrevious ? 1.0f : 0.5f);
+        btnNext.setAlpha(hasNext ? 1.0f : 0.5f);
+
+        Log.d(TAG, "Navigation buttons updated - Previous: " + hasPrevious + ", Next: " + hasNext);
     }
 
-    private void translateText() {
+    private void scrollToTop() {
+        scrollContent.scrollTo(0, 0);
+    }
+
+    private void copyCurrentPageText() {
+        if (currentPageIndex >= 0 && currentPageIndex < pagesContent.size()) {
+            String currentPageText = pagesContent.get(currentPageIndex);
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                    getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Page Content", currentPageText);
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, "Page content copied to clipboard", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareCurrentPageText() {
+        if (currentPageIndex >= 0 && currentPageIndex < pagesContent.size()) {
+            String currentPageText = pagesContent.get(currentPageIndex);
+            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, currentPageText);
+            shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, bookTitle + " - Page " + (currentPageIndex + 1));
+            startActivity(android.content.Intent.createChooser(shareIntent, "Share via"));
+        }
+    }
+
+    private void translateCurrentPageText() {
         Toast.makeText(this, "Translation functionality will be implemented in full version",
                 Toast.LENGTH_SHORT).show();
+        // In the future, this would trigger translation of the current page's text
     }
 }

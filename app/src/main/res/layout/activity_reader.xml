@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -36,8 +37,9 @@
 
     </RelativeLayout>
 
-    <!-- Content Area -->
+    <!-- Page Content Area -->
     <ScrollView
+        android:id="@+id/scroll_content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -54,45 +56,96 @@
 
     </ScrollView>
 
-    <!-- Action Buttons -->
+    <!-- Page Indicator -->
+    <TextView
+        android:id="@+id/tv_page_indicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Page 1 of 1"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="@color/surface_color" />
+
+    <!-- Navigation and Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="16dp"
         android:background="@color/surface_color"
         android:elevation="8dp">
 
-        <Button
-            android:id="@+id/btn_copy"
-            android:layout_width="0dp"
+        <!-- Page Navigation Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Copy"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
 
-        <Button
-            android:id="@+id/btn_share"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Share"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/rounded_button_secondary"
-            android:textColor="@android:color/white" />
+            <Button
+                android:id="@+id/btn_previous"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Previous"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="@android:color/white"
+                android:enabled="false" /> <!-- Disabled by default -->
 
-        <Button
-            android:id="@+id/btn_translate"
-            android:layout_width="0dp"
+            <Button
+                android:id="@+id/btn_next"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Next"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Translate"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_copy"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Copy"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/btn_share"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Share"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/rounded_button_secondary"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/btn_translate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Translate"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

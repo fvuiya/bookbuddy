@@ -5,9 +5,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class PdfSelectorActivity extends AppCompatActivity {
 
+    private static final String TAG = "PdfSelectorActivity";
     private static final int PICK_PDF_REQUEST = 1002;
     private static final int STORAGE_PERMISSION_REQUEST_CODE = 1003;
 
@@ -78,31 +79,41 @@ public class PdfSelectorActivity extends AppCompatActivity {
     private void processSelectedPdf(Uri pdfUri) {
         // Show processing message
         Toast.makeText(this, "Processing PDF...", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Starting PDF processing for URI: " + pdfUri.toString());
 
         // Process PDF in background
         CompletableFuture<PdfProcessor.PdfProcessingResult> processFuture = pdfProcessor.processPdf(pdfUri);
 
+        // Handle successful completion
         processFuture.thenAccept(result -> {
             runOnUiThread(() -> {
                 if (result.isSuccess()) {
+                    Log.d(TAG, "PDF processing successful: " + result.getMessage());
+                    Log.d(TAG, "Extracted text length: " + (result.getExtractedText() != null ? result.getExtractedText().length() : 0));
+
                     Toast.makeText(PdfSelectorActivity.this, result.getMessage(), Toast.LENGTH_SHORT).show();
 
                     // Pass the extracted text to ReaderActivity
                     Intent intent = new Intent(PdfSelectorActivity.this, ReaderActivity.class);
                     intent.putExtra("book_content", result.getExtractedText());
                     intent.putExtra("book_title", "PDF Document"); // You might want to extract the actual filename
+                    Log.d(TAG, "Starting ReaderActivity with content length: " +
+                            (result.getExtractedText() != null ? result.getExtractedText().length() : 0));
                     startActivity(intent);
                 } else {
+                    Log.e(TAG, "PDF processing failed: " + result.getMessage());
                     Toast.makeText(PdfSelectorActivity.this, "Failed: " + result.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
-        }).exceptionally(throwable -> {
+        }).exceptionally(throwable -> { // Handle exceptions in the CompletableFuture chain
             runOnUiThread(() -> {
+                Log.e(TAG, "Error processing PDF (in CompletableFuture chain)", throwable);
                 Toast.makeText(PdfSelectorActivity.this, "Error processing PDF: " + throwable.getMessage(),
                         Toast.LENGTH_LONG).show();
             });
             return null;
         });
+        // Note: No need for .whenComplete, as .thenAccept and .exceptionally cover both cases
     }
 
     @Override
