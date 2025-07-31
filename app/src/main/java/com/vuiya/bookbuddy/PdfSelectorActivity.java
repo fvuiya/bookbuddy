@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -14,12 +15,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.util.concurrent.CompletableFuture;
+
 public class PdfSelectorActivity extends AppCompatActivity {
 
     private static final int PICK_PDF_REQUEST = 1002;
     private static final int STORAGE_PERMISSION_REQUEST_CODE = 1003;
 
     private Button btnChooseFile;
+    private PdfProcessor pdfProcessor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,36 +32,27 @@ public class PdfSelectorActivity extends AppCompatActivity {
 
         initViews();
         setupClickListeners();
+
+        // Initialize PDF processor
+        pdfProcessor = new PdfProcessor(this);
     }
 
     private void initViews() {
         btnChooseFile = findViewById(R.id.btn_choose_file);
+        // Back button
+        findViewById(R.id.btn_back).setOnClickListener(v -> finish());
     }
 
     private void setupClickListeners() {
-        btnChooseFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Check for storage permission
-                if (ContextCompat.checkSelfPermission(PdfSelectorActivity.this,
-                        Manifest.permission.READ_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    // Request storage permission
-                    ActivityCompat.requestPermissions(PdfSelectorActivity.this,
-                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                            STORAGE_PERMISSION_REQUEST_CODE);
-                } else {
-                    // Permission already granted, open file picker
-                    openFilePicker();
-                }
-            }
-        });
-
-        // Back button functionality
-        findViewById(R.id.btn_back).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
+        btnChooseFile.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(PdfSelectorActivity.this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(PdfSelectorActivity.this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        STORAGE_PERMISSION_REQUEST_CODE);
+            } else {
+                openFilePicker();
             }
         });
     }
@@ -75,14 +70,39 @@ public class PdfSelectorActivity extends AppCompatActivity {
         if (requestCode == PICK_PDF_REQUEST && resultCode == RESULT_OK) {
             if (data != null && data.getData() != null) {
                 Uri pdfUri = data.getData();
-                // TODO: Process the selected PDF file
-                Toast.makeText(this, "PDF selected: " + pdfUri.toString(), Toast.LENGTH_SHORT).show();
-
-                // For now, just go back to main screen
-                // In future, we'll pass this URI to a PDF processing activity
-                finish();
+                processSelectedPdf(pdfUri);
             }
         }
+    }
+
+    private void processSelectedPdf(Uri pdfUri) {
+        // Show processing message
+        Toast.makeText(this, "Processing PDF...", Toast.LENGTH_SHORT).show();
+
+        // Process PDF in background
+        CompletableFuture<PdfProcessor.PdfProcessingResult> processFuture = pdfProcessor.processPdf(pdfUri);
+
+        processFuture.thenAccept(result -> {
+            runOnUiThread(() -> {
+                if (result.isSuccess()) {
+                    Toast.makeText(PdfSelectorActivity.this, result.getMessage(), Toast.LENGTH_SHORT).show();
+
+                    // Pass the extracted text to ReaderActivity
+                    Intent intent = new Intent(PdfSelectorActivity.this, ReaderActivity.class);
+                    intent.putExtra("book_content", result.getExtractedText());
+                    intent.putExtra("book_title", "PDF Document"); // You might want to extract the actual filename
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(PdfSelectorActivity.this, "Failed: " + result.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }).exceptionally(throwable -> {
+            runOnUiThread(() -> {
+                Toast.makeText(PdfSelectorActivity.this, "Error processing PDF: " + throwable.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            });
+            return null;
+        });
     }
 
     @Override
@@ -90,13 +110,19 @@ public class PdfSelectorActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == STORAGE_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, open file picker
                 openFilePicker();
             } else {
-                // Permission denied, show a message
                 Toast.makeText(this, "Storage permission is required to select PDF files",
                         Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (pdfProcessor != null) {
+            pdfProcessor.release();
         }
     }
 }

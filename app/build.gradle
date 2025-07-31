@@ -8,17 +8,20 @@ android {
 
     defaultConfig {
         applicationId "com.vuiya.bookbuddy"
-        minSdk 26
+        minSdk 26 // This is above 21, so MultiDex is enabled by default, but let's be explicit
         targetSdk 33
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Explicitly enable MultiDex
+        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled false // Keep this false for debugging the issue first
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -39,8 +42,8 @@ dependencies {
     // ML Kit Text Recognition
     implementation 'com.google.mlkit:text-recognition:16.0.0'
 
-    // PDF Processing
-    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+    // PDF Processing - Updated version
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0' // Ensure this is correct
 
     // Lottie Animations
     implementation 'com.airbnb.android:lottie:6.0.0'
@@ -51,6 +54,9 @@ dependencies {
 
     // Tesseract OCR
     implementation 'com.rmtheis:tess-two:9.1.0'
+
+    // MultiDex dependency - Add this
+    implementation 'androidx.multidex:multidex:2.0.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
