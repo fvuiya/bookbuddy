@@ -68,6 +68,54 @@
         android:padding="8dp"
         android:background="@color/surface_color" />
 
+    <!-- TTS Controls -->
+    <LinearLayout
+        android:id="@+id/layout_tts_controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@color/surface_color"
+        android:elevation="8dp"
+        android:gravity="center">
+
+        <ImageButton
+            android:id="@+id/btn_tts_previous"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_skip_previous"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="Previous Page" />
+
+        <ImageButton
+            android:id="@+id/btn_tts_play_pause"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/ic_play_arrow"
+            android:background="@drawable/circular_button_background"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="Play/Pause" />
+
+        <ImageButton
+            android:id="@+id/btn_tts_stop"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_stop"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="Stop" />
+
+        <ImageButton
+            android:id="@+id/btn_tts_next"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_skip_next"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Next Page" />
+
+    </LinearLayout>
+
     <!-- Navigation and Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -93,8 +141,7 @@
                 android:text="Previous"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/rounded_button"
-                android:textColor="@android:color/white"
-                android:enabled="false" /> <!-- Disabled by default -->
+                android:textColor="@android:color/white" />
 
             <Button
                 android:id="@+id/btn_next"
