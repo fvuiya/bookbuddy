@@ -12,10 +12,7 @@ public class OcrResultActivity extends AppCompatActivity {
 
     private ImageButton btnBack;
     private TextView tvOcrResult;
-    private String ocrResultText = "This is a sample OCR result. In the full implementation, this would show the text extracted from your scanned image.\n\n" +
-            "The OCR functionality would use ML Kit or Tesseract to recognize text in the image.\n\n" +
-            "You would be able to copy this text, translate it, or save it to your library.\n\n" +
-            "For now, this is just a placeholder to demonstrate the app flow.";
+    private String ocrResultText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +21,13 @@ public class OcrResultActivity extends AppCompatActivity {
 
         initViews();
         setupClickListeners();
+
+        // Get OCR result from intent
+        ocrResultText = getIntent().getStringExtra("ocr_result");
+        if (ocrResultText == null) {
+            ocrResultText = "No text was recognized. Please try again with a clearer image.";
+        }
+
         displayOcrResult();
     }
 
