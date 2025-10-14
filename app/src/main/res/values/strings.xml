@@ -8,4 +8,8 @@
     <string name="recent_books">Recent Books</string>
     <string name="no_recent_activity">No recent activity</string>
     <string name="view_all">View All</string>
+    <string name="capture">Capture</string>
+    <string name="back">Back</string>
+    <string name="force_language">Force Language:</string>
+    <string name="scanning_frame">Scanning Frame</string>
 </resources>

@@ -8,7 +8,7 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
 import com.google.android.gms.tasks.Tasks;
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader; // <-- ADDED import
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.text.PDFTextStripper;
 import com.google.mlkit.vision.common.InputImage;
@@ -30,20 +30,22 @@ public class PdfProcessor {
     private Context context;
     private TextRecognizer textRecognizer;
     private ExecutorService executorService;
+    private PdfProgressListener progressListener; // Added listener
 
-    public PdfProcessor(Context context) {
+    // Interface for progress updates
+    public interface PdfProgressListener {
+        void onProgressUpdate(int currentPage, int totalPages);
+    }
+
+    public PdfProcessor(Context context, PdfProgressListener listener) { // Added listener to constructor
         this.context = context;
+        this.progressListener = listener; // Store the listener
 
-        // --- KEY FIX: Initialize PDFBox resource loader ---
-        // This is necessary for PDFBox to find its internal resources like glyphlist.txt
-        // It must be called once before any PDFBox methods are used.
         try {
             PDFBoxResourceLoader.init(context.getApplicationContext());
             Log.d(TAG, "PDFBoxResourceLoader initialized successfully.");
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize PDFBoxResourceLoader.", e);
-            // The app can continue to function, but PDFBox functionality will fail.
-            // OCR fallback should still work.
         }
 
         this.textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
@@ -51,15 +53,12 @@ public class PdfProcessor {
     }
 
     public CompletableFuture<PdfProcessingResult> processPdf(Uri pdfUri) {
-        // Create a CompletableFuture that we can complete manually
         CompletableFuture<PdfProcessingResult> futureResult = new CompletableFuture<>();
 
-        // Run the processing logic on the executor
         executorService.submit(() -> {
-            File tempPdfFile = null; // Declare here so it's accessible in the finally block
+            File tempPdfFile = null;
             try {
                 Log.d(TAG, "Starting PDF processing for URI: " + pdfUri.toString());
-                // Copy the PDF to a temporary file if needed
                 tempPdfFile = copyPdfToTempFile(pdfUri);
                 if (tempPdfFile == null) {
                     Log.e(TAG, "Failed to copy PDF to temporary file");
@@ -68,16 +67,14 @@ public class PdfProcessor {
                 }
                 Log.d(TAG, "PDF copied to temporary file: " + tempPdfFile.getAbsolutePath());
 
-                // Try to extract text directly first (for digital PDFs)
                 Log.d(TAG, "Attempting to extract text from digital PDF...");
                 String extractedText = extractTextFromDigitalPdf(tempPdfFile);
                 if (extractedText != null && !extractedText.trim().isEmpty()) {
                     Log.d(TAG, "Digital PDF detected, extracted text directly");
                     futureResult.complete(new PdfProcessingResult(true, "Digital PDF processed", extractedText));
-                    return; // Exit early if successful
+                    return;
                 }
 
-                // If text extraction failed, treat as scanned PDF and perform OCR
                 Log.d(TAG, "Scanned PDF detected or digital extraction failed, performing OCR on pages...");
                 String ocrText = performOcrOnScannedPdf(tempPdfFile);
                 if (ocrText != null && !ocrText.trim().isEmpty()) {
@@ -85,13 +82,18 @@ public class PdfProcessor {
                     futureResult.complete(new PdfProcessingResult(true, "Scanned PDF processed with OCR", ocrText));
                 } else {
                     Log.w(TAG, "Failed to process PDF - no text found after OCR attempt");
+                    if (progressListener != null) { 
+                        progressListener.onProgressUpdate(0, 0); 
+                    }
                     futureResult.complete(new PdfProcessingResult(false, "Failed to process PDF - no text found", null));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error during PDF processing", e);
-                futureResult.completeExceptionally(e); // Complete with exception
+                if (progressListener != null) { 
+                    progressListener.onProgressUpdate(0, 0); 
+                }
+                futureResult.completeExceptionally(e);
             } finally {
-                // Ensure the temp file is deleted after processing
                 if (tempPdfFile != null) {
                     tempPdfFile.delete();
                     Log.d(TAG, "Deleted temporary PDF file: " + tempPdfFile.getAbsolutePath());
@@ -133,43 +135,42 @@ public class PdfProcessor {
 
     private String extractTextFromDigitalPdf(File pdfFile) {
         PDDocument document = null;
+        int totalPages = 0;
         try {
             Log.d(TAG, "Loading PDDocument from file: " + pdfFile.getAbsolutePath());
             document = PDDocument.load(pdfFile);
-            Log.d(TAG, "PDDocument loaded successfully. Number of pages: " + document.getNumberOfPages());
+            totalPages = document.getNumberOfPages();
+            Log.d(TAG, "PDDocument loaded successfully. Number of pages: " + totalPages);
 
-            Log.d(TAG, "Creating PDFTextStripper...");
-            // Wrap PDFTextStripper creation in a try-catch to isolate the specific failure
+            if (progressListener != null) {
+                progressListener.onProgressUpdate(0, totalPages); 
+            }
+
             PDFTextStripper pdfStripper;
             try {
                 pdfStripper = new PDFTextStripper();
-                Log.d(TAG, "PDFTextStripper created successfully.");
             } catch (ExceptionInInitializerError | NoClassDefFoundError e) {
-                Log.e(TAG, "Failed to initialize PDFTextStripper. This might be a MultiDex or ProGuard issue.", e);
-                // Return null to indicate failure, will try OCR
+                Log.e(TAG, "Failed to initialize PDFTextStripper.", e);
                 return null;
             }
 
-            Log.d(TAG, "Extracting text using PDFTextStripper...");
             String text = pdfStripper.getText(document);
             Log.d(TAG, "Text extracted successfully. Length: " + (text != null ? text.length() : 0));
+
+            if (progressListener != null) {
+                progressListener.onProgressUpdate(totalPages, totalPages); 
+            }
             return text;
-        } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
-            // Catch specific errors related to class loading/initialization
-            Log.w(TAG, "Failed to extract text from PDF (Class loading issue - might be scanned or MultiDex/ProGuard problem)", e);
-            return null; // Return null to indicate failure, will try OCR
-        } catch (UnsatisfiedLinkError e) {
-            // Catch native library loading errors
-            Log.w(TAG, "Failed to extract text from PDF (Native library issue)", e);
-            return null; // Return null to indicate failure, will try OCR
+        } catch (NoClassDefFoundError | ExceptionInInitializerError | UnsatisfiedLinkError e) {
+            Log.w(TAG, "Failed to extract text from PDF (Class/Native loading issue)", e);
+            return null;
         } catch (Exception e) {
             Log.w(TAG, "Failed to extract text from PDF (might be scanned or corrupted)", e);
-            return null; // Return null to indicate failure, will try OCR
+            return null;
         } finally {
             if (document != null) {
                 try {
                     document.close();
-                    Log.d(TAG, "PDDocument closed successfully.");
                 } catch (IOException e) {
                     Log.w(TAG, "Failed to close PDDocument", e);
                 }
@@ -177,110 +178,81 @@ public class PdfProcessor {
         }
     }
 
-
     private String performOcrOnScannedPdf(File pdfFile) {
         ParcelFileDescriptor parcelFileDescriptor = null;
         PdfRenderer pdfRenderer = null;
         StringBuilder ocrText = new StringBuilder();
-        boolean ocrPerformed = false;
+        boolean ocrPerformedAtLeastOnce = false;
+        int pageCount = 0;
 
         try {
             Log.d(TAG, "Starting OCR on scanned PDF: " + pdfFile.getAbsolutePath());
             parcelFileDescriptor = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY);
             pdfRenderer = new PdfRenderer(parcelFileDescriptor);
-
-            int pageCount = pdfRenderer.getPageCount();
-            Log.d(TAG, "PDF has " + pageCount + " pages.");
+            pageCount = pdfRenderer.getPageCount();
+            Log.d(TAG, "PDF has " + pageCount + " pages for OCR.");
 
             if (pageCount == 0) {
                 Log.w(TAG, "PDF has 0 pages, nothing to OCR.");
+                if (progressListener != null) {
+                    progressListener.onProgressUpdate(0, 0); 
+                }
                 return "";
             }
-
-            // Process a limited number of pages to prevent excessive processing
-            int pagesToProcess = Math.min(pageCount, 10); // Process max 10 pages for now
-            Log.d(TAG, "Will process first " + pagesToProcess + " pages.");
-
-            for (int i = 0; i < pagesToProcess; i++) {
-                Log.d(TAG, "Processing page " + (i + 1));
-                PdfRenderer.Page page = pdfRenderer.openPage(i);
-
+            
+            for (int i = 0; i < pageCount; i++) { 
+                if (progressListener != null) {
+                    progressListener.onProgressUpdate(i, pageCount); 
+                }
+                Log.d(TAG, "Processing page " + (i + 1) + "/" + pageCount);
+                PdfRenderer.Page page = null; 
+                Bitmap bitmap = null; 
                 try {
-                    // Render page to bitmap with reasonable density
-                    // Using higher density for better OCR accuracy, but not too high to avoid OOM
-                    int renderedWidth = page.getWidth() * 2; // Density 2x
+                    page = pdfRenderer.openPage(i);
+                    int renderedWidth = page.getWidth() * 2;
                     int renderedHeight = page.getHeight() * 2;
-                    Log.d(TAG, "Rendering page " + (i + 1) + " to bitmap (" + renderedWidth + "x" + renderedHeight + ")");
-
-                    Bitmap bitmap = Bitmap.createBitmap(
-                            renderedWidth,
-                            renderedHeight,
-                            Bitmap.Config.ARGB_8888
-                    );
-
-                    // Render the page to the bitmap
+                    bitmap = Bitmap.createBitmap(renderedWidth, renderedHeight, Bitmap.Config.ARGB_8888);
                     page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
 
-                    // Perform OCR on the bitmap
-                    Log.d(TAG, "Performing OCR on page " + (i + 1) + " bitmap");
                     InputImage inputImage = InputImage.fromBitmap(bitmap, 0);
+                    Text textResult = Tasks.await(textRecognizer.process(inputImage));
+                    ocrPerformedAtLeastOnce = true;
 
-                    // Use await() to make the call synchronous on the background thread
-                    // This is the key fix for the "Task is not yet complete" error
-                    Text text = Tasks.await(textRecognizer.process(inputImage)); // <-- Corrected line
-                    ocrPerformed = true;
-
-                    // Append text from this page
-                    int blocksFound = 0;
-                    for (Text.TextBlock block : text.getTextBlocks()) {
+                    for (Text.TextBlock block : textResult.getTextBlocks()) {
                         ocrText.append(block.getText()).append("\n");
-                        blocksFound++;
                     }
-                    Log.d(TAG, "Page " + (i + 1) + " OCR complete. Found " + blocksFound + " text blocks.");
-
-                    // Add page separator
                     ocrText.append("\n--- Page ").append(i + 1).append(" ---\n\n");
+                    Log.d(TAG, "Page " + (i + 1) + " OCR complete.");
 
-                    // Recycle bitmap to free memory
-                    bitmap.recycle();
                 } finally {
-                    page.close();
+                    if (bitmap != null) bitmap.recycle();
+                    if (page != null) page.close();
                     Log.d(TAG, "Closed page " + (i + 1));
                 }
             }
 
-            if (ocrPerformed) {
-                Log.d(TAG, "OCR processing completed successfully. Total text length: " + ocrText.length());
+            if (progressListener != null) {
+                progressListener.onProgressUpdate(pageCount, pageCount); 
+            }
+
+            if (ocrPerformedAtLeastOnce) {
                 return ocrText.toString();
             } else {
-                Log.w(TAG, "No OCR was performed on any page.");
-                return null;
+                Log.w(TAG, "No OCR was performed on any page, though pages were present.");
+                return null; 
             }
 
         } catch (Exception e) {
             Log.e(TAG, "Error performing OCR on scanned PDF", e);
-            return null; // Ensure we return null on any error
+            if (progressListener != null) {
+                progressListener.onProgressUpdate(pageCount, pageCount); 
+            }
+            return null;
         } finally {
-            // Close resources in reverse order
-            if (pdfRenderer != null) {
-                try {
-                    pdfRenderer.close();
-                    Log.d(TAG, "PdfRenderer closed.");
-                } catch (Exception e) {
-                    Log.w(TAG, "Error closing PdfRenderer", e);
-                }
-            }
-            if (parcelFileDescriptor != null) {
-                try {
-                    parcelFileDescriptor.close();
-                    Log.d(TAG, "ParcelFileDescriptor closed.");
-                } catch (Exception e) {
-                    Log.w(TAG, "Error closing ParcelFileDescriptor", e);
-                }
-            }
+            if (pdfRenderer != null) pdfRenderer.close();
+            if (parcelFileDescriptor != null) try { parcelFileDescriptor.close(); } catch (IOException ignored) {}
         }
     }
-
 
     public void release() {
         Log.d(TAG, "Releasing PdfProcessor resources");
@@ -305,7 +277,6 @@ public class PdfProcessor {
             this.extractedText = extractedText;
         }
 
-        // Getters
         public boolean isSuccess() { return success; }
         public String getMessage() { return message; }
         public String getExtractedText() { return extractedText; }

@@ -31,13 +31,13 @@
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_arrow_back"
                 android:tint="@android:color/white"
-                android:contentDescription="Back" />
+                android:contentDescription="@string/back" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
-                android:text="Scan Book"
+                android:text="@string/scan_book"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -57,7 +57,7 @@
                 android:layout_centerInParent="true"
                 android:src="@drawable/scanning_frame"
                 android:alpha="0.7"
-                android:contentDescription="Scanning Frame" />
+                android:contentDescription="@string/scanning_frame" />
 
         </RelativeLayout>
 
@@ -81,7 +81,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Force Language:"
+                    android:text="@string/force_language"
                     android:textColor="@android:color/white"
                     android:textSize="16sp" />
 
@@ -102,7 +102,7 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_camera"
                 android:tint="@android:color/white"
-                android:contentDescription="Capture" />
+                android:contentDescription="@string/capture" />
 
         </LinearLayout>
 

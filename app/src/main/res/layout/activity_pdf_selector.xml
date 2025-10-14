@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -33,51 +34,71 @@
 
     </RelativeLayout>
 
-    <!-- Main Content -->
-    <LinearLayout
+    <!-- Main Content Area -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center">
+        android:layout_height="match_parent">
 
-        <!-- Choose File Button -->
-        <Button
-            android:id="@+id/btn_choose_file"
+        <!-- Content Layout (Buttons, Info) -->
+        <LinearLayout
+            android:id="@+id/layout_content"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Choose PDF from Files"
-            android:textSize="18sp"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white"
-            android:drawableLeft="@drawable/ic_file_upload"
-            android:drawableTint="@android:color/white" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center">
 
-        <!-- Recent Files Button -->
-        <Button
-            android:id="@+id/btn_recent_files"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Recent Files"
-            android:textSize="18sp"
-            android:padding="16dp"
-            android:background="@drawable/rounded_button_secondary"
-            android:textColor="@android:color/white"
-            android:drawableLeft="@drawable/ic_history"
-            android:drawableTint="@android:color/white" />
+            <!-- Choose File Button -->
+            <Button
+                android:id="@+id/btn_choose_file"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Choose PDF from Files"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/rounded_button"
+                android:textColor="@android:color/white"
+                android:drawableLeft="@drawable/ic_file_upload"
+                android:drawableTint="@android:color/white" />
 
-        <!-- Info Text -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Select a PDF file to translate and read in any language"
-            android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="32dp"
-            android:textAlignment="center" />
+            <!-- Recent Files Button -->
+            <Button
+                android:id="@+id/btn_recent_files"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recent Files"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:background="@drawable/rounded_button_secondary"
+                android:textColor="@android:color/white"
+                android:drawableLeft="@drawable/ic_history"
+                android:drawableTint="@android:color/white"
+                android:visibility="gone" /> <!-- Hidden for now -->
 
-    </LinearLayout>
+            <!-- Info Text -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select a PDF file to translate and read in any language"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="32dp"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <!-- Lottie Loading Animation (Initially Hidden) -->
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottie_loading"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_gravity="center"
+            app:lottie_fileName="robot_reading.json"
+            app:lottie_loop="true"
+            app:lottie_autoPlay="false"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

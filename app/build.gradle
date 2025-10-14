@@ -100,7 +100,10 @@ dependencies {
     implementation libs.tess.two // Should resolve to com.rmtheis:tess-two:9.1.0
 
     // MultiDex support library (explicit dependency, good practice)
-    implementation libs.multidex // Should resolve to androidx.multidex:multidex:2.0.1
+    implementation libs.multidex
+    implementation libs.play.services.mlkit.text.recognition.japanese
+    implementation libs.play.services.mlkit.text.recognition.korean
+    implementation libs.play.services.mlkit.text.recognition.chinese
 
     // Testing dependencies
     testImplementation libs.junit // Should resolve to junit:junit:4.13.2

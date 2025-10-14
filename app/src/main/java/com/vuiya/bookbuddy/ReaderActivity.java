@@ -2,15 +2,20 @@ package com.vuiya.bookbuddy;
 
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.LinearLayout;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,23 +24,30 @@ import java.util.Locale;
 public class ReaderActivity extends AppCompatActivity implements TextToSpeech.OnInitListener {
 
     private static final String TAG = "ReaderActivity";
-    private ImageButton btnBack;
+    private static final String UTTERANCE_ID = "PAGE_UTTERANCE";
+
+    // Standard Views
+    private Toolbar toolbar;
     private TextView tvTitle, tvContent, tvPageIndicator;
     private ScrollView scrollContent;
     private View btnPrevious, btnNext, btnCopy, btnShare, btnTranslate;
+    private LinearLayout layoutStandardControls;
 
     // TTS Views
-    private LinearLayout layoutTtsControls;
-    private ImageButton btnTtsPrevious, btnTtsPlayPause, btnTtsStop, btnTtsNext;
+    private LinearLayout layoutTtsMode;
+    private ImageButton btnTtsPreviousPage, btnTtsPlayPause, btnTtsStop, btnTtsNextPage;
+    private TextView tvTtsStatus;
+    private Button btnExitTtsMode;
 
     private String bookTitle = "Sample Book";
-    private List<String> pagesContent = new ArrayList<>(); // Store content for each page
-    private int currentPageIndex = 0; // 0-based index
+    private List<String> pagesContent = new ArrayList<>();
+    private int currentPageIndex = 0;
 
     // TTS Engine
     private TextToSpeech textToSpeech;
     private boolean ttsInitialized = false;
     private boolean isPlaying = false;
+    private boolean autoPlayEnabled = true; // Default to auto-play
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,43 +55,81 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
         setContentView(R.layout.activity_reader);
 
         initViews();
+        setupToolbar();
         setupClickListeners();
 
         // Initialize TTS Engine
         textToSpeech = new TextToSpeech(this, this);
+        // Set up utterance listener for auto-play
+        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override
+            public void onStart(String utteranceId) {
+                runOnUiThread(() -> {
+                    if (UTTERANCE_ID.equals(utteranceId)) {
+                        isPlaying = true;
+                        updateTtsUi();
+                        Log.d(TAG, "TTS started for page " + (currentPageIndex + 1));
+                    }
+                });
+            }
 
-        // Get content from Intent (either from Camera OCR or PDF processing)
+            @Override
+            public void onDone(String utteranceId) {
+                runOnUiThread(() -> {
+                    if (UTTERANCE_ID.equals(utteranceId)) {
+                        Log.d(TAG, "TTS finished for page " + (currentPageIndex + 1));
+                        isPlaying = false;
+                        updateTtsUi();
+
+                        // Handle auto-play to next page
+                        if (autoPlayEnabled && currentPageIndex < pagesContent.size() - 1) {
+                            Log.d(TAG, "Auto-play enabled, moving to next page");
+                            moveToNextPageAndPlay();
+                        } else if (autoPlayEnabled && currentPageIndex >= pagesContent.size() - 1) {
+                            Log.d(TAG, "Reached last page, stopping TTS mode");
+                            // Optionally, you could just stop, or show a message
+                            // For now, we'll just update the status
+                            tvTtsStatus.setText("Finished reading");
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String utteranceId) {
+                runOnUiThread(() -> {
+                    if (UTTERANCE_ID.equals(utteranceId)) {
+                        Log.e(TAG, "TTS error for page " + (currentPageIndex + 1));
+                        isPlaying = false;
+                        updateTtsUi();
+                        Toast.makeText(ReaderActivity.this, "Error in text-to-speech", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+
+        // Get content from Intent
         String fullContent = getIntent().getStringExtra("book_content");
-        Log.d(TAG, "Received content from intent, length: " + (fullContent != null ? fullContent.length() : 0));
-
         bookTitle = getIntent().getStringExtra("book_title");
-        Log.d(TAG, "Received title from intent: " + bookTitle);
-
         if (bookTitle == null || bookTitle.isEmpty()) {
             bookTitle = "Untitled Document";
         }
 
-        // If we have content, split it into pages
-        // For now, we'll split by a simple heuristic (e.g., every 500 words or "--- Page X ---" markers)
-        // In a real implementation, you might have more sophisticated page splitting logic
         if (fullContent != null && !fullContent.isEmpty()) {
-            Log.d(TAG, "Splitting received content into pages");
             splitContentIntoPages(fullContent);
         } else {
-            Log.d(TAG, "No content received, using default page");
-            // Add a default page if no content
             pagesContent.add("No content available. This is a placeholder page.");
         }
 
         displayCurrentPage();
         updatePageIndicator();
         updateNavigationButtons();
-        updateTtsButtons();
+        // Initially, TTS UI is hidden
     }
 
     private void initViews() {
-        btnBack = findViewById(R.id.btn_back);
-        tvTitle = findViewById(R.id.tv_title);
+        toolbar = findViewById(R.id.toolbar);
+        tvTitle = findViewById(R.id.tv_title); // Although Toolbar handles title, keep reference if needed elsewhere
         tvContent = findViewById(R.id.tv_content);
         tvPageIndicator = findViewById(R.id.tv_page_indicator);
         scrollContent = findViewById(R.id.scroll_content);
@@ -89,58 +139,66 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
         btnCopy = findViewById(R.id.btn_copy);
         btnShare = findViewById(R.id.btn_share);
         btnTranslate = findViewById(R.id.btn_translate);
+        layoutStandardControls = findViewById(R.id.layout_standard_controls);
 
         // TTS Views
-        layoutTtsControls = findViewById(R.id.layout_tts_controls);
-        btnTtsPrevious = findViewById(R.id.btn_tts_previous);
+        layoutTtsMode = findViewById(R.id.layout_tts_mode);
+        btnTtsPreviousPage = findViewById(R.id.btn_tts_previous_page);
         btnTtsPlayPause = findViewById(R.id.btn_tts_play_pause);
         btnTtsStop = findViewById(R.id.btn_tts_stop);
-        btnTtsNext = findViewById(R.id.btn_tts_next);
+        btnTtsNextPage = findViewById(R.id.btn_tts_next_page);
+        tvTtsStatus = findViewById(R.id.tv_tts_status);
+        btnExitTtsMode = findViewById(R.id.btn_exit_tts_mode);
+    }
+
+    private void setupToolbar() {
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(bookTitle);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true); // Enable back button
+        }
     }
 
     private void setupClickListeners() {
-        btnBack.setOnClickListener(v -> finish());
-
+        // Standard Navigation
         btnPrevious.setOnClickListener(v -> {
             if (currentPageIndex > 0) {
+                stopTtsIfPlaying(); // Stop TTS if navigating manually
                 currentPageIndex--;
                 displayCurrentPage();
                 updatePageIndicator();
                 updateNavigationButtons();
-                updateTtsButtons();
                 scrollToTop();
             }
         });
 
         btnNext.setOnClickListener(v -> {
             if (currentPageIndex < pagesContent.size() - 1) {
+                stopTtsIfPlaying(); // Stop TTS if navigating manually
                 currentPageIndex++;
                 displayCurrentPage();
                 updatePageIndicator();
                 updateNavigationButtons();
-                updateTtsButtons();
                 scrollToTop();
             }
         });
 
+        // Standard Actions
         btnCopy.setOnClickListener(v -> copyCurrentPageText());
         btnShare.setOnClickListener(v -> shareCurrentPageText());
         btnTranslate.setOnClickListener(v -> translateCurrentPageText());
 
-        // TTS Button Listeners
-        btnTtsPrevious.setOnClickListener(v -> {
-            if (isPlaying) {
-                stopTts();
-            }
+        // TTS Mode Button Listeners
+        btnTtsPreviousPage.setOnClickListener(v -> {
             if (currentPageIndex > 0) {
+                stopTtsIfPlaying();
                 currentPageIndex--;
                 displayCurrentPage();
                 updatePageIndicator();
                 updateNavigationButtons();
-                updateTtsButtons();
                 scrollToTop();
                 // Optionally start playing the new page automatically
-                // playCurrentPage();
+                playCurrentPage();
             }
         });
 
@@ -154,32 +212,98 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
 
         btnTtsStop.setOnClickListener(v -> stopTts());
 
-        btnTtsNext.setOnClickListener(v -> {
-            if (isPlaying) {
-                stopTts();
-            }
+        btnTtsNextPage.setOnClickListener(v -> {
             if (currentPageIndex < pagesContent.size() - 1) {
+                stopTtsIfPlaying();
                 currentPageIndex++;
                 displayCurrentPage();
                 updatePageIndicator();
                 updateNavigationButtons();
-                updateTtsButtons();
                 scrollToTop();
                 // Optionally start playing the new page automatically
-                // playCurrentPage();
+                playCurrentPage();
+            } else if (currentPageIndex >= pagesContent.size() - 1) {
+                // If on last page, stop
+                stopTts();
+                tvTtsStatus.setText("Finished reading");
             }
         });
+
+        btnExitTtsMode.setOnClickListener(v -> exitTtsMode());
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.reader_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+            // Handle back button press
+            finish();
+            return true;
+        } else if (id == R.id.action_listen_audio) {
+            // Handle "Listen Audio" menu item
+            enterTtsMode();
+            return true;
+        }
+        // Handle other menu items if you add them
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void enterTtsMode() {
+        if (!ttsInitialized) {
+            Toast.makeText(this, "TTS engine is initializing, please try again shortly", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Hide standard controls and show TTS mode controls
+        layoutStandardControls.setVisibility(View.GONE);
+        layoutTtsMode.setVisibility(View.VISIBLE);
+
+        // Update TTS UI state
+        updateTtsUi();
+        tvTtsStatus.setText("TTS Mode: Ready");
+
+        // Optionally start playing immediately
+        // playCurrentPage();
+        Toast.makeText(this, "Entered Audio Mode", Toast.LENGTH_SHORT).show();
+    }
+
+    private void exitTtsMode() {
+        // Stop any ongoing TTS
+        stopTtsIfPlaying();
+
+        // Show standard controls and hide TTS mode controls
+        layoutTtsMode.setVisibility(View.GONE);
+        layoutStandardControls.setVisibility(View.VISIBLE);
+
+        Toast.makeText(this, "Exited Audio Mode", Toast.LENGTH_SHORT).show();
+    }
+
+    private void moveToNextPageAndPlay() {
+        if (currentPageIndex < pagesContent.size() - 1) {
+            currentPageIndex++;
+            displayCurrentPage();
+            updatePageIndicator();
+            updateNavigationButtons();
+            scrollToTop();
+
+            // Play the next page after a short delay to allow UI update
+            tvTtsStatus.setText("Moving to next page...");
+            scrollContent.postDelayed(() -> {
+                playCurrentPage();
+            }, 500); // 500ms delay
+        }
     }
 
     private void splitContentIntoPages(String fullContent) {
         pagesContent.clear();
 
-        // Simple splitting logic - you can make this more sophisticated
-        // For this example, we'll split by "--- Page X ---" markers if they exist
-        // Otherwise, we'll split into chunks of roughly 1000 characters
         if (fullContent.contains("--- Page ")) {
-            // Split by page markers
-            Log.d(TAG, "Splitting content by page markers");
             String[] pageSections = fullContent.split("--- Page \\d+ ---");
             for (String section : pageSections) {
                 String trimmedSection = section.trim();
@@ -188,9 +312,7 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
                 }
             }
         } else {
-            // Simple character-based splitting
-            Log.d(TAG, "Splitting content by character chunks");
-            int chunkSize = 1500; // Roughly 250-300 words
+            int chunkSize = 1500;
             int length = fullContent.length();
             for (int i = 0; i < length; i += chunkSize) {
                 int end = Math.min(length, i + chunkSize);
@@ -198,30 +320,24 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
             }
         }
 
-        // Ensure we have at least one page
         if (pagesContent.isEmpty()) {
-            Log.d(TAG, "No pages created, adding default page");
             pagesContent.add("Content could not be processed into pages.");
         }
-
-        Log.d(TAG, "Total pages created: " + pagesContent.size());
     }
 
     private void displayCurrentPage() {
         if (currentPageIndex >= 0 && currentPageIndex < pagesContent.size()) {
             String pageContent = pagesContent.get(currentPageIndex);
-            Log.d(TAG, "Displaying page " + (currentPageIndex + 1) + ", content length: " +
-                    (pageContent != null ? pageContent.length() : 0));
             tvContent.setText(pageContent);
-            tvTitle.setText(bookTitle);
+            // Toolbar title is handled by setSupportActionBar, but if you need dynamic update:
+            // if (getSupportActionBar() != null) getSupportActionBar().setTitle(bookTitle);
         }
     }
 
     private void updatePageIndicator() {
-        int currentPageDisplay = currentPageIndex + 1; // 1-based for display
+        int currentPageDisplay = currentPageIndex + 1;
         int totalPages = pagesContent.size();
         String indicatorText = String.format("Page %d of %d", currentPageDisplay, totalPages);
-        Log.d(TAG, "Updating page indicator: " + indicatorText);
         tvPageIndicator.setText(indicatorText);
     }
 
@@ -229,33 +345,37 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
         boolean hasPrevious = currentPageIndex > 0;
         boolean hasNext = currentPageIndex < pagesContent.size() - 1;
 
-        btnPrevious.setEnabled(hasPrevious);
-        btnNext.setEnabled(hasNext);
+        // These are only relevant in standard mode, but good to keep updated
+        if (btnPrevious != null) btnPrevious.setEnabled(hasPrevious);
+        if (btnNext != null) btnNext.setEnabled(hasNext);
 
-        // Optional: Change button appearance based on state
-        btnPrevious.setAlpha(hasPrevious ? 1.0f : 0.5f);
-        btnNext.setAlpha(hasNext ? 1.0f : 0.5f);
-
-        Log.d(TAG, "Navigation buttons updated - Previous: " + hasPrevious + ", Next: " + hasNext);
+        if (btnPrevious != null) btnPrevious.setAlpha(hasPrevious ? 1.0f : 0.5f);
+        if (btnNext != null) btnNext.setAlpha(hasNext ? 1.0f : 0.5f);
     }
 
-    private void updateTtsButtons() {
-        boolean hasPrevious = currentPageIndex > 0;
-        boolean hasNext = currentPageIndex < pagesContent.size() - 1;
+    private void updateTtsUi() {
+        if (layoutTtsMode.getVisibility() == View.VISIBLE) {
+            boolean hasPrevious = currentPageIndex > 0;
+            boolean hasNext = currentPageIndex < pagesContent.size() - 1;
 
-        btnTtsPrevious.setEnabled(hasPrevious);
-        btnTtsNext.setEnabled(hasNext);
+            btnTtsPreviousPage.setEnabled(hasPrevious);
+            btnTtsNextPage.setEnabled(hasNext);
 
-        // Update play/pause button icon
-        if (isPlaying) {
-            btnTtsPlayPause.setImageResource(R.drawable.ic_pause);
-        } else {
-            btnTtsPlayPause.setImageResource(R.drawable.ic_play_arrow);
+            btnTtsPreviousPage.setAlpha(hasPrevious ? 1.0f : 0.5f);
+            btnTtsNextPage.setAlpha(hasNext ? 1.0f : 0.5f);
+
+            if (isPlaying) {
+                btnTtsPlayPause.setImageResource(R.drawable.ic_pause);
+                tvTtsStatus.setText("TTS Mode: Playing (Page " + (currentPageIndex + 1) + ")");
+            } else {
+                btnTtsPlayPause.setImageResource(R.drawable.ic_play_arrow);
+                if (textToSpeech != null && textToSpeech.isSpeaking()) {
+                    tvTtsStatus.setText("TTS Mode: Speaking...");
+                } else {
+                    tvTtsStatus.setText("TTS Mode: Stopped (Page " + (currentPageIndex + 1) + ")");
+                }
+            }
         }
-
-        // Optional: Change button appearance based on state
-        btnTtsPrevious.setAlpha(hasPrevious ? 1.0f : 0.5f);
-        btnTtsNext.setAlpha(hasNext ? 1.0f : 0.5f);
     }
 
     private void scrollToTop() {
@@ -287,7 +407,6 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
     private void translateCurrentPageText() {
         Toast.makeText(this, "Translation functionality will be implemented in full version",
                 Toast.LENGTH_SHORT).show();
-        // In the future, this would trigger translation of the current page's text
     }
 
     // TTS Methods
@@ -303,23 +422,25 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
                 // Stop any ongoing speech
                 textToSpeech.stop();
 
-                // Speak the text
-                textToSpeech.speak(textToRead, TextToSpeech.QUEUE_FLUSH, null, "PAGE_READING");
-                isPlaying = true;
-                updateTtsButtons();
-                Log.d(TAG, "Started TTS for page " + (currentPageIndex + 1));
+                // Speak the text with an utterance ID for progress tracking
+                textToSpeech.speak(textToRead, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID);
+                // isPlaying flag will be set by UtteranceProgressListener.onStart
+                Log.d(TAG, "Queued TTS for page " + (currentPageIndex + 1));
             } else {
                 Toast.makeText(this, "No text to read on this page", Toast.LENGTH_SHORT).show();
+                tvTtsStatus.setText("No text on this page");
             }
         }
     }
 
     private void pauseTts() {
-        if (ttsInitialized && isPlaying) {
-            textToSpeech.stop(); // TTS doesn't have a true pause, so we stop
+        // TTS doesn't have a true pause, stop and restart from position if needed
+        // For simplicity, we'll just stop
+        if (ttsInitialized && (isPlaying || textToSpeech.isSpeaking())) {
+            textToSpeech.stop();
             isPlaying = false;
-            updateTtsButtons();
-            Log.d(TAG, "Paused TTS");
+            updateTtsUi();
+            Log.d(TAG, "Paused/Stopped TTS");
         }
     }
 
@@ -327,8 +448,14 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
         if (ttsInitialized) {
             textToSpeech.stop();
             isPlaying = false;
-            updateTtsButtons();
+            updateTtsUi();
             Log.d(TAG, "Stopped TTS");
+        }
+    }
+
+    private void stopTtsIfPlaying() {
+        if (isPlaying || (textToSpeech != null && textToSpeech.isSpeaking())) {
+            stopTts();
         }
     }
 
@@ -336,8 +463,7 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
     @Override
     public void onInit(int status) {
         if (status == TextToSpeech.SUCCESS) {
-            // Set language - you might want to make this configurable
-            int result = textToSpeech.setLanguage(Locale.getDefault()); // Or Locale.US, Locale.UK, etc.
+            int result = textToSpeech.setLanguage(Locale.getDefault());
 
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e(TAG, "TTS language is not supported");
@@ -345,7 +471,7 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
             } else {
                 ttsInitialized = true;
                 Log.d(TAG, "TTS engine initialized successfully");
-                runOnUiThread(() -> updateTtsButtons());
+                // Update UI if needed, but TTS mode might not be active yet
             }
         } else {
             Log.e(TAG, "Failed to initialize TTS engine");
@@ -355,7 +481,6 @@ public class ReaderActivity extends AppCompatActivity implements TextToSpeech.On
 
     @Override
     protected void onDestroy() {
-        // Shutdown TTS engine
         if (textToSpeech != null) {
             textToSpeech.stop();
             textToSpeech.shutdown();
