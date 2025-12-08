@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.application'
-    // Make sure the Kotlin Android plugin version in your project-level build.gradle matches your intended version (e.g., 1.8.22)
-    // id 'org.jetbrains.kotlin.android' version '1.8.22' apply false // This line is typically in the root build.gradle
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -11,50 +10,35 @@ android {
     defaultConfig {
         applicationId "com.vuiya.bookbuddy"
         minSdk 26
-        // Updated targetSdk to match compileSdk or a recent stable version
-        targetSdk 36 // Or 34 if you prefer, but 36 is available
+        targetSdk 36
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Explicitly enable MultiDex (good practice even if minSdk > 21 for library compatibility)
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            minifyEnabled false // Keep this false for debugging the issue first
-            // Make sure 'proguard-rules.pro' exists in the app module directory
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            // Optional: Apply ProGuard rules in debug builds if needed for testing
-            // minifyEnabled true
-            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
-        // Updated to Java 17 as per your environment
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // If you are using Kotlin, ensure this block is present and correct
-    // kotlinOptions {
-    //     jvmTarget = '17' // Match Java version
-    // }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 
     buildFeatures {
         viewBinding true
-        // Add other features if needed (e.g., buildConfig = true)
     }
 
-    // THIS IS THE KEY ADDITION
-    // We explicitly tell Gradle to pick the first file for any duplicate resources
-    // from the pdfbox-android library, which contains multiple .txt files that
-    // might cause conflicts or be stripped.
     packagingOptions {
         resources {
             pickFirst 'META-INF/versions/9/module-info.class'
@@ -63,59 +47,35 @@ android {
     }
 }
 
-// Force consistent Kotlin stdlib versions to resolve conflicts shown in dependency report
-// This should be at the top level of the app build.gradle
-configurations.all {
-    resolutionStrategy {
-        // Force the versions that are compatible and resolve conflicts
-        // Based on your dependency report, forcing 1.8.22 should resolve the duplicates
-        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
-        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
-        // You might also need to force the common stdlib if it appears
-        // force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22'
-    }
-}
-
 dependencies {
-    // Using version catalog aliases as per your snippet
-    implementation libs.appcompat.v161 // Should resolve to androidx.appcompat:appcompat:1.6.1
-    implementation libs.material.v180  // Should resolve to com.google.android.material:material:1.8.0
-    implementation libs.constraintlayout.v214 // Should resolve to androidx.constraintlayout:constraintlayout:2.1.4
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.13.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 
     // ML Kit Text Recognition
-    implementation libs.text.recognition // Should resolve to com.google.mlkit:text-recognition:16.0.0 or similar
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
 
     // PDF Processing
-    implementation libs.pdfbox.android // Should resolve to com.tom-roush:pdfbox-android:2.0.27.0
+    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
 
     // Lottie Animations
-    implementation libs.lottie // Should resolve to com.airbnb.android:lottie:6.0.0 or similar
+    implementation 'com.airbnb.android:lottie:6.7.1'
 
     // CardView and RecyclerView
-    implementation libs.cardview // Should resolve to androidx.cardview:cardview:1.0.0
-    implementation libs.recyclerview // Should resolve to androidx.recyclerview:recyclerview:1.3.0 or 1.4.0
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
     // Tesseract OCR
-    implementation libs.tess.two // Should resolve to com.rmtheis:tess-two:9.1.0
+    implementation 'com.rmtheis:tess-two:9.1.0'
 
-    // MultiDex support library (explicit dependency, good practice)
-    implementation libs.multidex
-    implementation libs.play.services.mlkit.text.recognition.japanese
-    implementation libs.play.services.mlkit.text.recognition.korean
-    implementation libs.play.services.mlkit.text.recognition.chinese
+    // MultiDex support library
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1'
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition-korean:16.0.1'
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition-chinese:16.0.1'
 
     // Testing dependencies
-    testImplementation libs.junit // Should resolve to junit:junit:4.13.2
-    androidTestImplementation libs.junit.v115 // Should resolve to androidx.test.ext:junit:1.1.5
-    androidTestImplementation libs.espresso.core.v351 // Should resolve to androidx.test.espresso:espresso-core:3.5.1
-
-    // Explicitly declare Kotlin stdlib versions to ensure consistency and resolve conflicts
-    // This complements the 'configurations.all' block above
-    // Make sure these versions match the ones forced above (1.8.22)
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
-    // If needed:
-    // implementation 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 }

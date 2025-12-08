@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -21,16 +23,14 @@ import androidx.core.content.ContextCompat;
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
-import com.airbnb.lottie.value.LottieFrameInfo;
 import com.airbnb.lottie.value.SimpleLottieValueCallback;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class PdfSelectorActivity extends AppCompatActivity {
+public class PdfSelectorActivity extends AppCompatActivity implements PdfProcessor.PdfProgressListener {
 
     private static final String TAG = "PdfSelectorActivity";
-    private static final int PICK_PDF_REQUEST = 1002;
     private static final int STORAGE_PERMISSION_REQUEST_CODE = 1003;
 
     private Button btnChooseFile;
@@ -38,6 +38,7 @@ public class PdfSelectorActivity extends AppCompatActivity {
     private boolean isProcessing = false;
     private LottieAnimationView lottieLoading;
     private View layoutContent;
+    private ActivityResultLauncher<Intent> pdfPickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,9 +49,20 @@ public class PdfSelectorActivity extends AppCompatActivity {
         setupClickListeners();
         applyLottieThemeColors();
 
-        pdfProcessor = new PdfProcessor(this);
+        pdfProcessor = new PdfProcessor(this, this);
 
-        // Log all key paths when composition is loaded
+        pdfPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Intent data = result.getData();
+                        if (data != null && data.getData() != null) {
+                            Uri pdfUri = data.getData();
+                            processSelectedPdf(pdfUri);
+                        }
+                    }
+                });
+
         lottieLoading.addLottieOnCompositionLoadedListener(
                 composition -> logAllKeyPaths(lottieLoading)
         );
@@ -61,13 +73,9 @@ public class PdfSelectorActivity extends AppCompatActivity {
         lottieLoading = findViewById(R.id.lottie_loading);
         layoutContent = findViewById(R.id.layout_content);
 
-        // Back button
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
     }
 
-    /**
-     * Logs all available KeyPaths in the Lottie animation.
-     */
     private void logAllKeyPaths(LottieAnimationView view) {
         if (view.getComposition() == null) {
             Log.w(TAG, "Lottie composition not loaded yet.");
@@ -104,18 +112,7 @@ public class PdfSelectorActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/pdf");
-        startActivityForResult(intent, PICK_PDF_REQUEST);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_PDF_REQUEST && resultCode == RESULT_OK) {
-            if (data != null && data.getData() != null) {
-                Uri pdfUri = data.getData();
-                processSelectedPdf(pdfUri);
-            }
-        }
+        pdfPickerLauncher.launch(intent);
     }
 
     private void processSelectedPdf(Uri pdfUri) {
@@ -410,5 +407,15 @@ public class PdfSelectorActivity extends AppCompatActivity {
         if (pdfProcessor != null) {
             pdfProcessor.release();
         }
+    }
+
+    @Override
+    public void onProgressUpdate(int currentPage, int totalPages) {
+        runOnUiThread(() -> {
+            if (totalPages > 0) {
+                int progress = (int) (((float) currentPage / totalPages) * 100);
+                Log.d(TAG, "PDF Processing Progress: " + progress + "%");
+            }
+        });
     }
 }
