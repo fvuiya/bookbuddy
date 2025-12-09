@@ -13,6 +13,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://github.com/psiegman/mvn-repo/raw/master/releases' }
     }
 }
 rootProject.name = 'BookBuddy' // Make sure this matches your project name
