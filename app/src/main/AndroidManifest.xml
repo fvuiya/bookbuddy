@@ -24,7 +24,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.BookBuddy">
             <intent-filter>
@@ -32,6 +32,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
 
         <activity
             android:name=".CameraActivity"
@@ -81,6 +86,11 @@
 
         <activity
             android:name=".SocialActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
+
+        <activity
+            android:name=".SignUpActivity"
             android:exported="false"
             android:theme="@style/Theme.BookBuddy" />
 

@@ -1,5 +1,6 @@
 package com.vuiya.bookbuddy
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,25 +11,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Comment
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.vuiya.bookbuddy.services.FirebaseSocialService
 import com.vuiya.bookbuddy.services.MockSocialService
 import com.vuiya.bookbuddy.ui.theme.BookBuddyTheme
+import kotlinx.coroutines.launch
+
+// Toggle this to switch between Mock (offline) and Firebase (online) data
+// ⚠️ SET TO FALSE UNTIL YOU ENABLE REALTIME DATABASE IN FIREBASE CONSOLE!
+// See QUICK_START_FIREBASE.md for setup instructions
+private const val USE_FIREBASE = false // Set to true ONLY after Firebase is configured
 
 class SocialActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,70 +45,173 @@ class SocialActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SocialScreen() {
-    val socialViewModel: SocialViewModel = viewModel { SocialViewModel(MockSocialService()) }
+    val context = LocalContext.current
+    val socialViewModel: SocialViewModel = viewModel {
+        SocialViewModel(
+            if (USE_FIREBASE) FirebaseSocialService() else MockSocialService()
+        )
+    }
     val uiState by socialViewModel.uiState.collectAsState()
     
     val tabs = listOf("Feed", "Friends", "Books", "Notifications")
     var selectedTab by remember { mutableStateOf(0) }
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("BookBuddy Social") },
-                actions = {
-                    IconButton(onClick = { /* TODO: Open notifications */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications")
-                    }
-                    IconButton(onClick = { /* TODO: Open profile */ }) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            if (selectedTab == 0) { // Only show on Feed tab
-                ExtendedFloatingActionButton(
-                    onClick = { socialViewModel.setShowCreatePost(true) },
-                    text = { Text("Create Post") },
-                    icon = { Icon(Icons.Default.Add, contentDescription = "Create Post") }
-                )
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Tabs
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        "BookBuddy",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    Divider()
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                        label = { Text("Social Feed") },
+                        selected = true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Menu, contentDescription = null) },
+                        label = { Text("All Features") },
+                        selected = false,
+                        onClick = {
+                            context.startActivity(Intent(context, MainActivity::class.java))
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        label = { Text("Camera OCR") },
+                        selected = false,
+                        onClick = {
+                            context.startActivity(Intent(context, CameraActivity::class.java))
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Star, contentDescription = null) },
+                        label = { Text("Library") },
+                        selected = false,
+                        onClick = {
+                            context.startActivity(Intent(context, LibraryActivity::class.java))
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        label = { Text("Settings") },
+                        selected = false,
+                        onClick = {
+                            context.startActivity(Intent(context, SettingsActivity::class.java))
+                            scope.launch { drawerState.close() }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Divider()
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) },
+                        label = { Text("Logout") },
+                        selected = false,
+                        onClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            context.startActivity(Intent(context, LoginActivity::class.java))
+                            (context as ComponentActivity).finish()
+                        }
                     )
                 }
             }
-            
-            // Tab content
-            when (selectedTab) {
-                0 -> FeedTab(socialViewModel, uiState)
-                1 -> FriendsTab(uiState)
-                2 -> BooksTab(uiState)
-                3 -> NotificationsTab(uiState)
-            }
         }
-        
-        // Create Post Dialog
-        if (uiState.showCreatePost) {
-            CreatePostDialog(
-                onDismiss = { socialViewModel.setShowCreatePost(false) },
-                onPost = { content, bookId ->
-                    socialViewModel.createPost(content, bookId)
-                    socialViewModel.setShowCreatePost(false)
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("BookBuddy Social") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            scope.launch { drawerState.open() }
+                        }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            selectedTab = 3 // Switch to Notifications tab
+                        }) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                        }
+                        IconButton(onClick = { /* TODO: Open profile */ }) {
+                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                        }
+                    }
+                )
+            },
+            floatingActionButton = {
+                if (selectedTab == 0) { // Only show on Feed tab
+                    ExtendedFloatingActionButton(
+                        onClick = { socialViewModel.setShowCreatePost(true) },
+                        text = { Text("Create Post") },
+                        icon = { Icon(Icons.Default.Add, contentDescription = "Create Post") }
+                    )
                 }
-            )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                // Tabs
+                TabRow(selectedTabIndex = selectedTab) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+
+                // Tab content
+                when (selectedTab) {
+                    0 -> FeedTab(socialViewModel, uiState)
+                    1 -> FriendsTab(uiState)
+                    2 -> BooksTab(uiState)
+                    3 -> NotificationsTab(uiState)
+                }
+            }
+
+            // Create Post Dialog
+            if (uiState.showCreatePost) {
+                CreatePostDialog(
+                    onDismiss = { socialViewModel.setShowCreatePost(false) },
+                    onPost = { content, bookId ->
+                        socialViewModel.createPost(content, bookId)
+                        socialViewModel.setShowCreatePost(false)
+                    }
+                )
+            }
         }
     }
 }
