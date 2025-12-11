@@ -1,29 +1,23 @@
 package com.vuiya.bookbuddy
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Comment
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,54 +41,59 @@ fun SocialScreen() {
     val socialViewModel: SocialViewModel = viewModel { SocialViewModel(MockSocialService()) }
     val uiState by socialViewModel.uiState.collectAsState()
     
-    val tabs = listOf("Feed", "Friends", "Books", "Notifications")
-    var selectedTab by remember { mutableStateOf(0) }
+    val navigationItems = listOf(
+        NavigationItem("Feed", Icons.Default.Home),
+        NavigationItem("Friends", Icons.Default.Person),
+        NavigationItem("Library", Icons.Default.Book),
+        NavigationItem("Notifications", Icons.Default.Notifications)
+    )
+    
+    var selectedItem by remember { mutableStateOf(0) }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("BookBuddy Social") },
+                title = { Text(navigationItems[selectedItem].title) },
                 actions = {
-                    IconButton(onClick = { /* TODO: Open notifications */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications")
-                    }
-                    IconButton(onClick = { /* TODO: Open profile */ }) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    if (selectedItem == 0) { // Only show profile on Feed
+                        IconButton(onClick = { /* TODO: Open profile */ }) {
+                            Icon(Icons.Default.Person, contentDescription = "Profile")
+                        }
                     }
                 }
             )
         },
         floatingActionButton = {
-            if (selectedTab == 0) { // Only show on Feed tab
+            if (selectedItem == 0) { // Only show on Feed tab
                 ExtendedFloatingActionButton(
                     onClick = { socialViewModel.setShowCreatePost(true) },
                     text = { Text("Create Post") },
                     icon = { Icon(Icons.Default.Add, contentDescription = "Create Post") }
                 )
             }
+        },
+        bottomBar = {
+            NavigationBar {
+                navigationItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = { Icon(item.icon, contentDescription = item.title) },
+                        label = { Text(item.title) },
+                        selected = selectedItem == index,
+                        onClick = { selectedItem = index }
+                    )
+                }
+            }
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Tabs
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
-                }
-            }
-            
-            // Tab content
-            when (selectedTab) {
+            when (selectedItem) {
                 0 -> FeedTab(socialViewModel, uiState)
                 1 -> FriendsTab(uiState)
-                2 -> BooksTab(uiState)
+                2 -> LibraryTab() // Using Library instead of Books for better consistency
                 3 -> NotificationsTab(uiState)
             }
         }
@@ -112,6 +111,172 @@ fun SocialScreen() {
     }
 }
 
+data class NavigationItem(val title: String, val icon: androidx.compose.material.icons.Icons.ImageVector)
+
+@Composable
+fun LibraryTab() {
+    val context = LocalContext.current
+    
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item {
+            Text(
+                text = "Your Library",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+        
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { 
+                        context.startActivity(Intent(context, LibraryActivity::class.java))
+                    },
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Book,
+                            contentDescription = "Library",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = "View All Books",
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Manage your personal library",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { 
+                        context.startActivity(Intent(context, EditorActivity::class.java))
+                    },
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Create",
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = "Create New Book",
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Write and publish your own book",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { 
+                        context.startActivity(Intent(context, CameraActivity::class.java))
+                    },
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .background(
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Camera,
+                            contentDescription = "OCR",
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column {
+                        Text(
+                            text = "Scan Books",
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Convert images to text with OCR",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun FeedTab(socialViewModel: SocialViewModel, uiState: SocialUiState) {
     LazyColumn(
@@ -119,8 +284,10 @@ fun FeedTab(socialViewModel: SocialViewModel, uiState: SocialUiState) {
     ) {
         // Feed posts
         items(uiState.feedPosts) { post ->
+            val isLiked = uiState.likedPostIds.contains(post.postId)
             PostCard(
                 post = post,
+                isLiked = isLiked,
                 onLike = { socialViewModel.likePost(it) },
                 onComment = { socialViewModel.addComment(it, "") },
                 onShare = { /* TODO: Implement share */ }
@@ -461,6 +628,7 @@ fun NotificationItemCard(notification: com.vuiya.bookbuddy.models.Notification) 
 @Composable
 fun PostCard(
     post: com.vuiya.bookbuddy.models.Post,
+    isLiked: Boolean,
     onLike: (String) -> Unit,
     onComment: (String) -> Unit,
     onShare: (String) -> Unit
@@ -578,9 +746,9 @@ fun PostCard(
                     onClick = { onLike(post.postId) }
                 ) {
                     Icon(
-                        if (false) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Like",
-                        tint = if (false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                        tint = if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = "${post.likesCount} Likes")

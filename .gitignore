@@ -1,222 +1,59 @@
 ```
-# Compiled and build artifacts
-*.class
-*.o
-*.obj
-*.so
-*.a
-*.dll
-*.exe
-*.out
+# Android build artifacts
+*.apk
+*.aar
+*.dex
 
-# Dependencies
-.gradle/
+# Android build outputs
 build/
-dist/
+.externalNativeBuild/
 
-# Logs and temp files
+# Android Studio
+.gradle/
+local.properties
+captures/
+
+# Generated files
+gen/
+out/
+
+# Log files
 *.log
-*.tmp
-*.swp
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
+# IDE
 .vscode/
 .idea/
+*.iml
+*.iws
 
 # OS generated files
 .DS_Store
 Thumbs.db
 
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Python specific
+# Python (if applicable)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
 venv/
 .venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage*
-.nox/
-.pytest_cache/
-.mypy_cache/
+.env
+.env.local
+*.env.*
 
-# Node.js specific
+# Node.js (if applicable)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-node_modules/
+
+# Build outputs
 dist/
-build/
-
-# Java specific
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*.hprof
-hs_err_pid*
-
-# Android specific
-*.ap_
-*.apk
-*.aab
-*.dex
-*.aar
-local.properties
-captures/
-.externalNativeBuild
-.gradle
-build/
-.pro
-.settings/
-bin/
-gen/
-obj/
-out/
-.libs/
-*.iws
-*TeamCity*
-*.pid
-*.seed
-*.session
-.hprof
-.DS_Store
-Thumbs.db
-.lombok
-nb-configuration.xml
-*.iml
-*.ipr
-*.iws
-.idea/
-*.sw?
-*~
-*.orig
-*.rej
-*.bak
-*.tmp
-*.temp
-*.log
-*.cache
-*.tmp
-*.tmp.*
-*.temp.*
-*~
-#*.properties
-.settings/
-bin/
-gen/
-out/
 target/
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*.hprof
-hs_err_pid*
-recommender-ml.log
-*.pid
-*.seed
-*.session
-.hprof
-.DS_Store
-Thumbs.db
-.lombok
-nb-configuration.xml
-*.iml
-*.ipr
-*.iws
-.idea/
-*.sw?
-*~
-*.orig
-*.rej
-*.bak
-*.tmp
-*.temp
-*.log
-*.cache
-*.tmp
-*.tmp.*
-*.temp.*
-*~
-#*.properties
-.settings/
-bin/
-gen/
-out/
-target/
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-*.hprof
-hs_err_pid*
-recommender-ml.log
-*.pid
-*.seed
-*.session
-.hprof
-.DS_Store
-Thumbs.db
-.lombok
-nb-configuration.xml
-*.iml
-*.ipr
-*.iws
-.idea/
-*.sw?
-*~
-*.orig
-*.rej
-*.bak
-*.tmp
-*.temp
-*.log
-*.cache
-*.tmp
-*.tmp.*
-*.temp.*
-*~
-
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```

@@ -15,7 +15,8 @@ data class SocialUiState(
     val notifications: List<Notification> = emptyList(),
     val showCreatePost: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val likedPostIds: Set<String> = emptySet() // Track which posts the current user has liked
 )
 
 class SocialViewModel(
@@ -105,7 +106,12 @@ class SocialViewModel(
                         post
                     }
                 }
-                _uiState.value = _uiState.value.copy(feedPosts = updatedPosts)
+                // Add the post ID to likedPostIds
+                val updatedLikedPostIds = _uiState.value.likedPostIds + postId
+                _uiState.value = _uiState.value.copy(
+                    feedPosts = updatedPosts,
+                    likedPostIds = updatedLikedPostIds
+                )
             }.onFailure { exception ->
                 _uiState.value = _uiState.value.copy(error = exception.message)
             }
