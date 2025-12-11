@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services' // Firebase Google Services plugin
 }
 
 android {
@@ -92,10 +93,26 @@ dependencies {
     def compose_version = "1.4.3"
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.material3:material3:1.1.1"
+    implementation "androidx.compose.material:material-icons-extended:1.4.3"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation 'androidx.activity:activity-compose:1.7.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
+
+    // Firebase BoM (Bill of Materials) - manages Firebase versions
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+
+    // Firebase services (versions managed by BoM) - Spark Plan Compatible
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    implementation 'com.google.firebase:firebase-database-ktx' // Realtime Database instead of Firestore
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+
+    // Note: Crashlytics, Storage, and Cloud Messaging require Blaze Plan (credit card)
+    // We use Realtime Database for all data storage including file metadata
+
+    // Google Play Services for Google Sign-In
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
 
     // Testing dependencies

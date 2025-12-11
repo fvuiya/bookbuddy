@@ -106,6 +106,88 @@ BookBuddy allows users to:
     *   [ ] Redesign the reader's audio controls to offer two distinct options: "Hear Original Text" and "Hear Translated Text".
     *   [X] Integrate a TTS engine that can be configured by user preferences (e.g., Google vs. Samsung).
 
+### Phase 3: Online Infrastructure & Backend
+
+#### Note on Infrastructure Constraints
+BookBuddy is built to work within the **Firebase Spark Plan (free tier)** and **GitHub Education resources** that don't require a credit card. We use **Firebase Realtime Database** instead of Firestore/Storage (which require Blaze Plan with credit card). We leverage free services, open-source alternatives, and efficient architecture to maximize functionality without paid upgrades.
+
+*   **Firebase Setup & Authentication (Spark Plan Compatible):**
+    *   [X] Set up Firebase project and integrate Firebase SDK into the app
+    *   [X] Implement Firebase Authentication (Email/Password, Anonymous) - fully free on Spark Plan
+    *   [X] Create user registration and login UI in Compose
+    *   [X] Created FirebaseAuthManager for handling all auth operations
+    *   [ ] Implement account recovery and password reset flows
+    *   [ ] Set up Firebase Security Rules for user data protection
+*   **Realtime Database & Data Storage (Spark Plan - NO CREDIT CARD):**
+    *   [X] Designed Realtime Database schema for users, books, posts, comments, friends, notifications
+    *   [X] Created RealtimeModels.kt with all data structures
+    *   [X] Implemented FirebaseSocialService replacing MockSocialService
+    *   [ ] Enable Realtime Database in Firebase Console
+    *   [ ] Add Security Rules to Realtime Database
+    *   [ ] Test real-time data synchronization
+    *   [ ] Implement data compression for stored books (Base64 for small books)
+    *   [ ] Design pagination and lazy-loading to optimize performance
+    *   **Note:** Firebase Storage requires Blaze Plan (credit card) - using Base64 encoding in database or external hosting (GitHub Pages, Cloudinary) instead
+*   **Social Features Backend (Realtime Database Optimized):**
+    *   [X] Created database structure for user profiles, friend lists, and connections
+    *   [X] Implemented friend request system with acceptance/rejection
+    *   [X] Built post creation and retrieval system
+    *   [X] Added like and comment functionality
+    *   [X] Created notification triggers for friend requests
+    *   [ ] Test feed system with real-time updates
+    *   [ ] Implement activity feed archiving for old posts
+*   **Book Publishing & Discovery (Realtime Database):**
+    *   [X] Designed database schema for books with metadata
+    *   [X] Implemented book publishing workflow (draft → published state)
+    *   [X] Built public book library browsing
+    *   [ ] Test book download tracking
+    *   [ ] Implement book reviews and ratings system
+    *   [ ] Add book search functionality
+    *   [ ] Add book download tracking with batched analytics (reduce write operations)
+    *   [ ] Implement book reviews and ratings system with aggregated scores (reduce reads)
+*   **Cloud Functions & Backend Logic (Free Tier Alternative):**
+    *   [ ] **Note:** Firebase Cloud Functions require a credit card to enable, so we use alternative approaches:
+    *   [ ] Implement client-side triggers using Android WorkManager for background tasks
+    *   [ ] Use Firestore triggers via client-side listeners instead of Cloud Functions
+    *   [ ] Implement notification system using Firebase Cloud Messaging (FCM) with client-side scheduling
+    *   [ ] Create book indexing logic on-device or during user actions instead of server-side
+    *   [ ] Use Firestore Security Rules for enforcing data consistency instead of functions
+*   **GitHub Education Resources (No Credit Card Required):**
+    *   [ ] Leverage GitHub Copilot for accelerated development (free with Student Developer Pack)
+    *   [ ] Use GitHub Actions for basic CI/CD pipeline (free for public and private repos)
+    *   [ ] Implement GitHub Projects for project management and issue tracking (free)
+    *   [ ] Set up GitHub repository with proper documentation and contributing guidelines
+    *   [ ] Use GitHub Discussions for community support and feature requests (free)
+    *   [ ] Use GitHub Pages for hosting documentation and project website (free)
+    *   [ ] Leverage free GitHub-hosted runners for automated testing and builds
+*   **Alternative Services (No Credit Card, Community-Friendly):**
+    *   [ ] Consider Supabase (PostgreSQL backend) as Firebase alternative - offers free tier with no credit card required
+    *   [ ] Evaluate Appwrite (self-hosted or managed) as open-source Firebase alternative
+    *   [ ] Use Cloudinary for free image storage and optimization (free tier: 25GB/month)
+    *   [ ] Implement email via SendGrid free tier (100 emails/day) for notifications
+    *   [ ] Use Sentry for error tracking and monitoring (free tier available)
+*   **Security & Compliance (Spark Plan Friendly):**
+    *   [ ] Set up comprehensive Firebase Security Rules (main security layer on Spark Plan)
+    *   [ ] Implement data encryption on-device before uploading to Firebase
+    *   [ ] Add rate limiting in Security Rules to prevent abuse (reduce operational costs)
+    *   [ ] Set up GDPR-compliant data handling and deletion (important for free tier)
+    *   [ ] Create user data privacy controls and export features (Firestore backup exports)
+    *   [ ] Implement strict field-level permissions in Security Rules
+*   **Analytics & Monitoring (Spark Plan Compatible):**
+    *   [ ] Integrate Firebase Analytics for user behavior tracking (fully free on Spark Plan)
+    *   [ ] Set up Firebase Crashlytics for crash reporting (fully free on Spark Plan)
+    *   [ ] Create custom analytics events for key user actions
+    *   [ ] Use local logging and export analytics to Firestore for dashboard creation
+    *   [ ] Implement lightweight error logging using Firestore (batched writes)
+    *   [ ] Use Google Analytics to track website/documentation traffic (free)
+*   **Cost Optimization Strategy:**
+    *   [ ] Implement aggressive caching in Kotlin to reduce Firestore reads
+    *   [ ] Use Firestore's offline persistence to reduce real-time sync costs
+    *   [ ] Archive old/inactive user data to keep storage manageable
+    *   [ ] Implement monthly quota monitoring and alerts
+    *   [ ] Design workflows that batch database operations
+    *   [ ] Monitor monthly usage to stay within Spark Plan limits (50k reads, 20k writes, 20k deletes/day)
+
 ### Phase 4: Testing and Release
 
 *   **Write Unit Tests:**
@@ -117,6 +199,32 @@ BookBuddy allows users to:
     *   [ ] Publish the app to the Google Play Store.
 
 ## Changelog
+
+### Completed Tasks
+
+#### Core Architecture & Infrastructure
+*   [X] Migrate entire app to Kotlin and Jetpack Compose; re-architected file processing to paged-file system for performance with large books
+
+#### OCR & Document Processing
+*   [X] Implemented ML Kit Text Recognition with multi-language support (Bangla/Devanagari); created ReaderActivity for scanned books with improved PDF accuracy (300 DPI)
+
+#### Reading Experience
+*   [X] BookReaderActivity for published books with adjustable font sizes (12-32pt), theme selection, EPUB support, and seamless edit flow
+
+#### Text-to-Speech & Language Features
+*   [X] TTS engine selection (Google, Samsung, etc.) with voice installation status; translation services integration; language detection
+
+#### Professional Authoring System
+*   [X] EditorActivity with Quill.js WebView; rich text formatting; paged file system with flexible numbering (1, 1.1, 1.2, 2, 2.1); multi-page navigation (Previous/Next/Jump); page management ("Before", "After", "At End"); auto-save (10-sec); export options (Plain Text, Markdown, Clean HTML); manual Publish feature; dirty-state checking
+
+#### Image Processing
+*   [X] CameraActivity for image capture; Image-to-PDF conversion
+
+#### Social Networking & Community
+*   [X] SocialActivity with tabbed interface (Feed, Friends, Books, Notifications); user profiles, friend connections, feed system, post interactions (Like, Comment, Share), notifications
+
+#### UI/UX Enhancements
+*   [X] Redesigned Library with grid layout, book covers, sorting/filtering, "Draft" badge; migrated MainActivity, SettingsActivity, LibraryActivity to Compose; fixed library state management with onResume() refresh
 
 ### Dependencies & Architecture
 *   Upgraded all project dependencies to latest stable versions (AppCompat 1.7.1, Material 1.13.0, ConstraintLayout 2.2.1, etc.)
