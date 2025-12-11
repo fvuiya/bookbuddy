@@ -114,8 +114,12 @@ BookBuddy is built to work within the **Firebase Spark Plan (free tier)** and **
 *   **Firebase Setup & Authentication (Spark Plan Compatible):**
     *   [X] Set up Firebase project and integrate Firebase SDK into the app
     *   [X] Implement Firebase Authentication (Email/Password, Anonymous) - fully free on Spark Plan
-    *   [X] Create user registration and login UI in Compose
+    *   [X] Create user registration and login UI in Compose (LoginActivity, SignUpActivity)
     *   [X] Created FirebaseAuthManager for handling all auth operations
+    *   [X] Made LoginActivity the launcher activity (app opens to login screen)
+    *   [X] Integrated authentication flow: Login → SocialActivity (main hub) → All features
+    *   [X] Added navigation drawer with logout functionality
+    *   [X] Production-ready social media app architecture implemented
     *   [ ] Implement account recovery and password reset flows
     *   [ ] Set up Firebase Security Rules for user data protection
 *   **Realtime Database & Data Storage (Spark Plan - NO CREDIT CARD):**
@@ -225,6 +229,12 @@ BookBuddy is built to work within the **Firebase Spark Plan (free tier)** and **
 
 #### UI/UX Enhancements
 *   [X] Redesigned Library with grid layout, book covers, sorting/filtering, "Draft" badge; migrated MainActivity, SettingsActivity, LibraryActivity to Compose; fixed library state management with onResume() refresh
+
+#### Authentication & App Flow
+*   [X] Implemented complete authentication system with LoginActivity and SignUpActivity (Email/Password, Anonymous login)
+*   [X] Made LoginActivity the launcher activity; app opens to login screen (like Instagram/Twitter/TikTok)
+*   [X] SocialActivity is now the main hub after login with navigation drawer (Camera, Library, Settings, Logout)
+*   [X] Production-ready social media app architecture: Login → Feed → All Features
 
 ### Dependencies & Architecture
 *   Upgraded all project dependencies to latest stable versions (AppCompat 1.7.1, Material 1.13.0, ConstraintLayout 2.2.1, etc.)
