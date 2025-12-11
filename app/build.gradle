@@ -72,6 +72,9 @@ dependencies {
         exclude group: 'xmlpull', module: 'xmlpull'
     }
 
+    // HTML Parsing for book export
+    implementation 'org.jsoup:jsoup:1.17.2'
+
     // Lottie Animations
     implementation 'com.airbnb.android:lottie:6.7.1'
 

@@ -41,7 +41,7 @@ class LibraryAdapter(
             tvTitle.text = item.title
             tvAuthor.text = item.author
             tvLanguage.text = item.language
-            tvType.text = item.type
+            tvType.text = item.category
 
             itemView.setOnClickListener {
                 val position = adapterPosition

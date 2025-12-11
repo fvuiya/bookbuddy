@@ -1,7 +1,6 @@
 package com.vuiya.bookbuddy
 
 import android.app.Activity
-import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,9 +17,15 @@ import com.vuiya.bookbuddy.ui.theme.BookBuddyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(libraryItems: List<LibraryItem>, onRemoveItem: (LibraryItem) -> Unit) {
-    val context = LocalContext.current
-    val activity = (context as? Activity)
+fun LibraryScreen(
+    libraryItems: List<LibraryItem>,
+    onRemoveItem: (LibraryItem) -> Unit,
+    onOpenBook: (LibraryItem) -> Unit,
+    onPublishBook: (LibraryItem) -> Unit = {},
+    onCreateBook: (String, String, String) -> Unit = { _, _, _ -> }
+) {
+    val activity = (LocalContext.current as? Activity)
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     var sortOption by remember { mutableStateOf(SortOption.TITLE) }
     var languageFilter by remember { mutableStateOf<String?>(null) }
@@ -34,6 +39,16 @@ fun LibraryScreen(libraryItems: List<LibraryItem>, onRemoveItem: (LibraryItem) -
             }
         )
 
+    if (showCreateDialog) {
+        CreateBookDialog(
+            onDismiss = { showCreateDialog = false },
+            onCreate = { title, author, language ->
+                onCreateBook(title, author, language)
+                showCreateDialog = false
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -44,6 +59,17 @@ fun LibraryScreen(libraryItems: List<LibraryItem>, onRemoveItem: (LibraryItem) -
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showCreateDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_add),
+                    contentDescription = "Create New Book"
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -58,7 +84,7 @@ fun LibraryScreen(libraryItems: List<LibraryItem>, onRemoveItem: (LibraryItem) -
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Your library is empty\nStart scanning books or opening PDFs to build your library",
+                        text = "Your library is empty",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(32.dp)
                     )
@@ -70,7 +96,12 @@ fun LibraryScreen(libraryItems: List<LibraryItem>, onRemoveItem: (LibraryItem) -
                         .padding(8.dp)
                 ) {
                     items(filteredAndSortedItems) { item ->
-                        LibraryItem(item = item, onRemoveClick = { onRemoveItem(item) })
+                        LibraryItem(
+                            item = item,
+                            onRemoveClick = { onRemoveItem(item) },
+                            onItemClick = { onOpenBook(item) },
+                            onPublishClick = { onPublishBook(item) }
+                        )
                     }
                 }
             }
@@ -123,19 +154,15 @@ enum class SortOption {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryItem(item: LibraryItem, onRemoveClick: () -> Unit) {
-    val context = LocalContext.current
+fun LibraryItem(item: LibraryItem, onRemoveClick: () -> Unit, onItemClick: () -> Unit, onPublishClick: () -> Unit = {}) {
+    val isDraft = item.category == "Draft"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = {
-            val intent = Intent(context, ReaderActivity::class.java).apply {
-                putExtra("book_title", item.title)
-            }
-            context.startActivity(intent)
-        }
+        onClick = onItemClick
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -148,7 +175,19 @@ fun LibraryItem(item: LibraryItem, onRemoveClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (isDraft) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        SuggestionChip(
+                            onClick = { },
+                            label = { Text("Draft", style = MaterialTheme.typography.labelSmall) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        )
+                    }
+                }
                 Text(text = item.author, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row {
@@ -158,11 +197,21 @@ fun LibraryItem(item: LibraryItem, onRemoveClick: () -> Unit) {
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = item.type,
+                        text = item.category,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
+
+            if (isDraft) {
+                Button(
+                    onClick = onPublishClick,
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text("Publish")
+                }
+            }
+
             IconButton(onClick = onRemoveClick) {
                 Icon(painter = painterResource(id = R.drawable.ic_delete), contentDescription = "Delete")
             }
@@ -170,18 +219,104 @@ fun LibraryItem(item: LibraryItem, onRemoveClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateBookDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String, String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var author by remember { mutableStateOf("") }
+    var language by remember { mutableStateOf("English") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val languages = listOf("English", "Spanish", "French", "German", "Italian", "Portuguese", "Chinese", "Japanese", "Korean", "Arabic", "Hindi", "Bengali", "Russian")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create New Book") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Book Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = author,
+                    onValueChange = { author = it },
+                    label = { Text("Author Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = language,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Language") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        languages.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text(lang) },
+                                onClick = {
+                                    language = lang
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank() && author.isNotBlank()) {
+                        onCreate(title.trim(), author.trim(), language)
+                    }
+                },
+                enabled = title.isNotBlank() && author.isNotBlank()
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
 fun LibraryScreenPreview() {
     val sampleItems = remember {
         mutableStateListOf(
-            LibraryItem("The Great Gatsby", "F. Scott Fitzgerald", "English", "Book"),
-            LibraryItem("To Kill a Mockingbird", "Harper Lee", "English", "Book"),
-            LibraryItem("1984", "George Orwell", "English", "Book"),
-            LibraryItem("Pride and Prejudice", "Jane Austen", "Spanish", "Book")
+            LibraryItem("The Great Gatsby", "F. Scott Fitzgerald", "English", "Book", "/path/to/book1"),
         )
     }
     BookBuddyTheme {
-        LibraryScreen(libraryItems = sampleItems, onRemoveItem = { sampleItems.remove(it) })
+        LibraryScreen(libraryItems = sampleItems, onRemoveItem = { sampleItems.remove(it) }, onOpenBook = {})
     }
 }

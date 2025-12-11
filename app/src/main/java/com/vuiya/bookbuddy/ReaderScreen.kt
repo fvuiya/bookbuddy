@@ -39,7 +39,8 @@ fun ReaderScreen(
     onCopyClick: () -> Unit,
     onShareClick: () -> Unit,
     onTranslateClick: () -> Unit,
-    onListenAudioClick: () -> Unit
+    onListenAudioClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     val activity = (LocalContext.current as? Activity)
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -83,7 +84,16 @@ fun ReaderScreen(
                     color = readerTheme.textColor
                 )
             }
-            ReaderControls(currentPage = currentPage, pageCount = pageCount, onPreviousClick, onNextClick, onCopyClick, onShareClick, onTranslateClick)
+            ReaderControls(
+                currentPage = currentPage,
+                pageCount = pageCount,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onCopyClick = onCopyClick,
+                onShareClick = onShareClick,
+                onTranslateClick = onTranslateClick,
+                onEditClick = onEditClick
+            )
         }
     }
 
@@ -153,7 +163,8 @@ fun ReaderControls(
     onNextClick: () -> Unit,
     onCopyClick: () -> Unit,
     onShareClick: () -> Unit,
-    onTranslateClick: () -> Unit
+    onTranslateClick: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -186,6 +197,9 @@ fun ReaderControls(
             }
             Button(onClick = onTranslateClick) {
                 Text("Translate")
+            }
+            Button(onClick = onEditClick) {
+                Text("Edit")
             }
         }
     }

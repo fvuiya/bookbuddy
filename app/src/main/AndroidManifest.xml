@@ -62,10 +62,20 @@
         <activity
             android:name=".OcrResultActivity"
             android:exported="false"
-            android.theme="@style/Theme.BookBuddy" />
+            android:theme="@style/Theme.BookBuddy" />
 
         <activity
             android:name=".LanguageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
+
+        <activity
+            android:name=".EditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.BookBuddy" />
+
+        <activity
+            android:name=".BookReaderActivity"
             android:exported="false"
             android:theme="@style/Theme.BookBuddy" />
 

@@ -71,10 +71,19 @@ class ReaderActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     onCopyClick = { copyCurrentPageText() },
                     onShareClick = { shareCurrentPageText() },
                     onTranslateClick = { translateCurrentPageText() },
-                    onListenAudioClick = { enterTtsMode() }
+                    onListenAudioClick = { enterTtsMode() },
+                    onEditClick = { navigateToEditor() }
                 )
             }
         }
+    }
+
+    private fun navigateToEditor() {
+        val intent = Intent(this, EditorActivity::class.java).apply {
+            putExtra("book_path", bookPath)
+            putExtra("book_title", bookTitle)
+        }
+        startActivity(intent)
     }
 
     private fun getCurrentPageText(): String {
