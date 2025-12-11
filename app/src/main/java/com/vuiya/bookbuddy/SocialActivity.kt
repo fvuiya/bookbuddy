@@ -3,11 +3,23 @@ package com.vuiya.bookbuddy
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -260,7 +272,7 @@ fun FriendItemCard(user: com.vuiya.bookbuddy.models.UserProfile) {
                     .size(50.dp)
                     .background(
                         MaterialTheme.colorScheme.primary,
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -315,7 +327,7 @@ fun BookItemCard(book: com.vuiya.bookbuddy.models.SocialBook) {
                     .size(60.dp)
                     .background(
                         MaterialTheme.colorScheme.primaryContainer,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(4.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -405,7 +417,7 @@ fun NotificationItemCard(notification: com.vuiya.bookbuddy.models.Notification) 
                     .size(40.dp)
                     .background(
                         MaterialTheme.colorScheme.secondaryContainer,
-                        shape = androidx.compose.foundation.shape.CircleShape
+                        shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -473,7 +485,7 @@ fun PostCard(
                             .size(40.dp)
                             .background(
                                 MaterialTheme.colorScheme.primary,
-                                shape = androidx.compose.foundation.shape.CircleShape
+                                shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -529,7 +541,7 @@ fun PostCard(
                                 .size(40.dp)
                                 .background(
                                     MaterialTheme.colorScheme.primaryContainer,
-                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                    shape = RoundedCornerShape(4.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {

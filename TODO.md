@@ -118,6 +118,32 @@ BookBuddy allows users to:
 
 ## Changelog
 
+### Completed Tasks
+
+#### Core Architecture & Infrastructure
+*   [X] Migrate entire app to Kotlin and Jetpack Compose; re-architected file processing to paged-file system for performance with large books
+
+#### OCR & Document Processing
+*   [X] Implemented ML Kit Text Recognition with multi-language support (Bangla/Devanagari); created ReaderActivity for scanned books with improved PDF accuracy (300 DPI)
+
+#### Reading Experience
+*   [X] BookReaderActivity for published books with adjustable font sizes (12-32pt), theme selection, EPUB support, and seamless edit flow
+
+#### Text-to-Speech & Language Features
+*   [X] TTS engine selection (Google, Samsung, etc.) with voice installation status; translation services integration; language detection
+
+#### Professional Authoring System
+*   [X] EditorActivity with Quill.js WebView; rich text formatting; paged file system with flexible numbering (1, 1.1, 1.2, 2, 2.1); multi-page navigation (Previous/Next/Jump); page management ("Before", "After", "At End"); auto-save (10-sec); export options (Plain Text, Markdown, Clean HTML); manual Publish feature; dirty-state checking
+
+#### Image Processing
+*   [X] CameraActivity for image capture; Image-to-PDF conversion
+
+#### Social Networking & Community
+*   [X] SocialActivity with tabbed interface (Feed, Friends, Books, Notifications); user profiles, friend connections, feed system, post interactions (Like, Comment, Share), notifications
+
+#### UI/UX Enhancements
+*   [X] Redesigned Library with grid layout, book covers, sorting/filtering, "Draft" badge; migrated MainActivity, SettingsActivity, LibraryActivity to Compose; fixed library state management with onResume() refresh
+
 ### Dependencies & Architecture
 *   Upgraded all project dependencies to latest stable versions (AppCompat 1.7.1, Material 1.13.0, ConstraintLayout 2.2.1, etc.)
 *   Converted entire codebase from Java to Kotlin
