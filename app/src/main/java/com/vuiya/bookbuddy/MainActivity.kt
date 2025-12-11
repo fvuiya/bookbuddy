@@ -71,6 +71,17 @@ fun MainScreen() {
                     onClick = { context.startActivity(Intent(context, LibraryActivity::class.java)) }
                 )
                 FeatureCard(
+                    title = "Social",
+                    iconResId = R.drawable.ic_social,
+                    onClick = { context.startActivity(Intent(context, SocialActivity::class.java)) }
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                FeatureCard(
                     title = "Settings",
                     iconResId = R.drawable.ic_settings,
                     onClick = { context.startActivity(Intent(context, SettingsActivity::class.java)) }
